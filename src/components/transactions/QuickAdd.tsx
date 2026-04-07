@@ -266,7 +266,9 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
         {/* Date */}
         <div style={{ marginBottom: '1rem' }}>
           <p className="section-label">date</p>
-          <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
+          <div style={{ padding: '0 1.5rem' }}>
+            <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
+          </div>
         </div>
 
         {/* Notes & Account */}
