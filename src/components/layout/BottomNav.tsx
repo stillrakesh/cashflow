@@ -20,7 +20,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingC
     { id: 'transactions', icon: Receipt, label: 'logs' },
     { id: 'add', icon: Plus, label: '' },
     ...(isAdmin ? [{ id: 'analytics', icon: BarChart3, label: 'analytics' }] : []),
-    { id: 'chat', icon: MessageCircle, label: 'ai chat' },
+    ...(isAdmin ? [{ id: 'chat', icon: MessageCircle, label: 'ai chat' }] : []),
   ];
 
   return (

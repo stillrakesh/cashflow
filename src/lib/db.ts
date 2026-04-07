@@ -4,6 +4,7 @@ import type { Transaction, User } from '../types';
 
 export const USERS_COLLECTION = 'users';
 export const TRANSACTIONS_COLLECTION = 'transactions';
+export const SETTINGS_COLLECTION = 'settings';
 
 // Snapshot listeners
 export const listenToTransactions = (callback: (transactions: Transaction[]) => void) => {
@@ -36,6 +37,19 @@ export const listenToUsers = (callback: (users: User[]) => void) => {
   });
 };
 
+export const listenToAppSettings = (callback: (settings: any) => void) => {
+  const docRef = doc(db, SETTINGS_COLLECTION, 'app');
+  return onSnapshot(docRef, (doc) => {
+    if (doc.exists()) {
+      callback(doc.data());
+    } else {
+      callback({});
+    }
+  }, (error) => {
+    console.error("Error listening to app settings: ", error);
+  });
+};
+
 // CRUD Operations
 export const addTransactionToDb = async (txn: Transaction) => {
   const docRef = doc(collection(db, TRANSACTIONS_COLLECTION), txn.id);
@@ -60,6 +74,11 @@ export const updateUserInDb = async (user: User) => {
 export const deleteUserFromDb = async (id: string) => {
   const docRef = doc(db, USERS_COLLECTION, id);
   await deleteDoc(docRef);
+};
+
+export const updateAppSettingsInDb = async (updates: any) => {
+  const docRef = doc(db, SETTINGS_COLLECTION, 'app');
+  await setDoc(docRef, updates, { merge: true });
 };
 
 // DB Initialization / Migration

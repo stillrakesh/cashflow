@@ -21,7 +21,8 @@ import {
 import { generateMonthlyReport, generateTransactionStatement } from './utils/pdfUtils';
 import { 
   listenToTransactions, listenToUsers, addTransactionToDb, 
-  updateTransactionInDb, deleteTransactionFromDb, initializeDatabase, updateUserInDb, deleteUserFromDb
+  updateTransactionInDb, deleteTransactionFromDb, initializeDatabase, updateUserInDb, deleteUserFromDb,
+  listenToAppSettings, updateAppSettingsInDb
 } from './lib/db';
 
 const STORAGE_KEY = 'cafeflow_transactions';
@@ -69,9 +70,14 @@ function App() {
         setIsDbReady(true);
       });
 
+      const unsubSettings = listenToAppSettings((settings) => {
+        if (settings.geminiApiKey) setGeminiApiKey(settings.geminiApiKey);
+      });
+
       return () => {
         unsubUsers();
         unsubTxns();
+        unsubSettings();
       };
     };
 
@@ -441,6 +447,10 @@ function App() {
         );
 
       case 'chat':
+        if (currentUser?.role !== 'admin') {
+          setActiveTab('dashboard');
+          return null;
+        }
         return (
           <div className="screen animate-in" style={{ padding: '0 1.25rem 0.5rem' }}>
             <div className="screen-header" style={{ paddingBottom: '0.5rem' }}>
@@ -486,7 +496,11 @@ function App() {
                   className="input" 
                   placeholder="AIzaSy..." 
                   value={geminiApiKey} 
-                  onChange={e => setGeminiApiKey(e.target.value)}
+                  onChange={e => {
+                    const k = e.target.value;
+                    setGeminiApiKey(k);
+                    if (currentUser?.role === 'admin') updateAppSettingsInDb({ geminiApiKey: k });
+                  }}
                   autoCorrect="off" autoCapitalize="off" spellCheck={false}
                   style={{ padding: '0.625rem 2.5rem 0.625rem 0.75rem', fontSize: '0.8125rem', fontFamily: geminiApiKey && !showApiKey ? 'monospace' : 'inherit' }}
                 />
