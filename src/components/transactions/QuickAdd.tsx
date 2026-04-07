@@ -264,19 +264,21 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
         </div>
 
         {/* Date */}
-        <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <p className="section-label" style={{ width: '100%', textAlign: 'center' }}>date</p>
-          <input 
-            type="date" 
-            className="input text-center-date" 
-            style={{ width: 'calc(50% - 0.25rem)' }} 
-            value={date} 
-            onChange={e => setDate(e.target.value)} 
-          />
+        <div style={{ marginBottom: '1.25rem' }}>
+          <p className="section-label">date</p>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <input 
+              type="date" 
+              className="input text-center-date" 
+              style={{ width: 'calc(50% - 0.25rem)' }} 
+              value={date} 
+              onChange={e => setDate(e.target.value)} 
+            />
+          </div>
         </div>
 
         {/* Notes & Account */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
           <div>
             <p className="section-label">notes</p>
             <input type="text" className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="what was this for?" />
@@ -287,7 +289,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
           </div>
         </div>
 
-        <div style={{ marginBottom: '1rem' }}>
+        <div style={{ marginBottom: '1.25rem' }}>
             <p className="section-label">vendor (optional)</p>
             <input type="text" className="input" value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. swiggy, local shop" />
         </div>
