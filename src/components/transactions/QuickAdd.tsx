@@ -123,7 +123,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
         <div className="sheet-handle" />
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 1.25rem', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 500, margin: 0 }}>new entry</h2>
             {apiKey && (
@@ -132,7 +132,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
                 disabled={isScanning}
                 style={{ 
                   background: 'var(--bg-2)', border: 'none', borderRadius: 'var(--radius-full)', 
-                  padding: '0.25rem 0.5rem', fontSize: '0.625rem', fontWeight: 600,
+                  padding: '0.25rem 0.625rem', fontSize: '0.625rem', fontWeight: 600,
                   display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--text-1)'
                 }}
               >
