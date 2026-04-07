@@ -229,13 +229,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !isTyping && inputText.trim() && process(inputText)}
           className="input"
-          style={{ flex: 1, borderRadius: 'var(--radius-full)', padding: '0.625rem 1rem' }}
+          style={{ flex: 1, borderRadius: 'var(--radius-full)' }}
         />
         <button
           disabled={isTyping}
           onClick={() => inputText.trim() && process(inputText)}
           className="btn-primary"
-          style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, flexShrink: 0, opacity: !isTyping ? 1 : 0.5 }}
+          style={{ width: '48px', height: '48px', borderRadius: '50%', padding: 0, flexShrink: 0, opacity: !isTyping ? 1 : 0.5 }}
         >
           <Send size={14} />
         </button>
