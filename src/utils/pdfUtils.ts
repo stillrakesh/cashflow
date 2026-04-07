@@ -92,7 +92,7 @@ export const generateTransactionStatement = (
 };
 
 export const generateMonthlyReport = (
-  transactions: Transaction[],
+  _transactions: Transaction[],
   stats: DashboardStats,
   monthLabel: string,
   restaurantName: string = 'CafeFlow'

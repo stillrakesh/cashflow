@@ -1,0 +1,4 @@
+﻿src/components/dashboard/AIChatbot.tsx(3,10): error TS6133: 'parseAIText' is declared but its value is never read.
+src/components/dashboard/AIChatbot.tsx(32,66): error TS6133: 'currentUser' is declared but its value is never read.
+src/components/layout/Sidebar.tsx(7,3): error TS6133: 'Settings' is declared but its value is never read.
+src/utils/pdfUtils.ts(95,3): error TS6133: 'transactions' is declared but its value is never read.

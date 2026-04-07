@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Trash2 } from 'lucide-react';
-import { parseAIText, formatINR, answerFinanceQuestion } from '../../utils/financeUtils';
+import { formatINR, answerFinanceQuestion } from '../../utils/financeUtils';
 import { parseWithGemini, type GeminiParsedTransaction } from '../../utils/geminiUtils';
 import type { Transaction } from '../../types';
 
@@ -29,7 +29,7 @@ const CHIPS = [
 
 const CHAT_STORAGE_KEY = 'cafeflow_chat_history';
 
-const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser, transactions, apiKey }) => {
+const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _currentUser, transactions, apiKey }) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(CHAT_STORAGE_KEY);
     if (saved) {

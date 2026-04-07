@@ -4,7 +4,6 @@ import {
   Receipt, 
   TrendingUp, 
   Users, 
-  Settings, 
   PlusCircle, 
   LogOut, 
   Sparkles,
