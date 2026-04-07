@@ -44,7 +44,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
   const [account, setAccount] = useState('');
   const [notes, setNotes] = useState('');
   const [vendor, setVendor] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }));
   const [isScanning, setIsScanning] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,12 +61,20 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
   const handleSave = () => {
     if (!canSave) return;
     const cat = type === 'sale' ? 'sale' : category.trim().toLowerCase() || 'misc';
+    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    let finalDateIso = new Date().toISOString();
+    
+    // If the user selected a different date than today, anchoring it to IST noon ensures it saves on the exact right day.
+    if (date !== todayIST) {
+      finalDateIso = new Date(`${date}T12:00:00+05:30`).toISOString();
+    }
+    
     const txnData: Partial<Transaction> = {
       type, amount: parseFloat(amount), category: cat, paymentType,
       notes: notes.trim(),
       account: account.trim(),
       vendor: vendor.trim(),
-      date: new Date(date).toISOString(),
+      date: finalDateIso,
     };
     if (type === 'expense') txnData.classification = CATEGORY_CLASSIFICATION[cat] || 'variable';
     
@@ -201,7 +209,6 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
                 placeholder="e.g. facebook ads" 
                 value={category} 
                 onChange={e => setCategory(e.target.value)} 
-                style={{ fontSize: '0.8125rem' }} 
               />
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.375rem' }}>
@@ -258,24 +265,24 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
         {/* Date */}
         <div style={{ marginBottom: '1rem' }}>
           <p className="section-label">date</p>
-          <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} style={{ fontSize: '0.8125rem' }} />
+          <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
         </div>
 
         {/* Notes & Account */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <div>
             <p className="section-label">notes</p>
-            <input type="text" className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="what was this for?" style={{ fontSize: '0.8125rem' }} />
+            <input type="text" className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="what was this for?" />
           </div>
           <div>
             <p className="section-label">account / person</p>
-            <input type="text" className="input" value={account} onChange={e => setAccount(e.target.value)} placeholder="e.g. hdfc, ramesh" style={{ fontSize: '0.8125rem' }} />
+            <input type="text" className="input" value={account} onChange={e => setAccount(e.target.value)} placeholder="e.g. hdfc, ramesh" />
           </div>
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
             <p className="section-label">vendor</p>
-            <input type="text" className="input" value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. swiggy, local shop" style={{ fontSize: '0.8125rem' }} />
+            <input type="text" className="input" value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. swiggy, local shop" />
         </div>
 
         {/* Save */}

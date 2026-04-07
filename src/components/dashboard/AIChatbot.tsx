@@ -28,9 +28,23 @@ const CHIPS = [
 ];
 
 const CHAT_STORAGE_KEY = 'cafeflow_chat_history';
+const CHAT_VERSION_KEY = 'cafeflow_chat_version';
+const CHAT_VERSION = '4'; // Bump this to clear old cached chat history
+
+const getWelcomeMessage = (): Message => ({
+  id: '1', sender: 'ai', timestamp: new Date(),
+  text: 'hi, i\'m your finance assistant.\n\nadd entries like "sales cash 500" or ask "what\'s my profit this month?"',
+});
 
 const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _currentUser, transactions, apiKey }) => {
   const [messages, setMessages] = useState<Message[]>(() => {
+    // If the stored chat version doesn't match, clear old (possibly corrupted) history
+    const storedVersion = localStorage.getItem(CHAT_VERSION_KEY);
+    if (storedVersion !== CHAT_VERSION) {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+      localStorage.setItem(CHAT_VERSION_KEY, CHAT_VERSION);
+      return [getWelcomeMessage()];
+    }
     const saved = localStorage.getItem(CHAT_STORAGE_KEY);
     if (saved) {
       try {
@@ -38,16 +52,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
         // Revive date objects
         return parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
       } catch (e) {
-        return [];
+        return [getWelcomeMessage()];
       }
     }
-    return [
-      {
-        id: '1', sender: 'ai', timestamp: new Date(),
-        text: 'hi, i\'m your advanced finance assistant powered by gemini.\n\nadd entries like "sales, cash received 312 and 120 UPI" or ask questions like "what\'s my profit?"',
-      },
-    ];
+    return [getWelcomeMessage()];
   });
+
 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -60,10 +70,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
 
   const clearHistory = () => {
     if (confirm('Clear chat history?')) {
-      setMessages([{
-        id: Date.now().toString(), sender: 'ai', timestamp: new Date(),
-        text: 'chat history cleared.'
-      }]);
+      setMessages([getWelcomeMessage()]);
     }
   };
 
@@ -107,10 +114,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
           text: 'I couldn\'t extract any transactions or answer that. Try being more specific.',
         }]);
       }
-    } catch (err) {
+    } catch (err: any) {
+      let errorMsg = `Sorry, I hit an error connecting to Gemini: ${err.message || err}`;
+      if (err.message && err.message.includes('429')) {
+        errorMsg = `⏳ **Rate limit hit!** \n\nGemini API's free tier has a limit of 15 requests per minute. You're chatting a bit too fast—please wait about 30 seconds and try again!`;
+      }
       setMessages(p => [...p, {
         id: Date.now().toString(), sender: 'ai', timestamp: new Date(),
-        text: 'Sorry, I hit an error connecting to Gemini. Is your API key valid?',
+        text: errorMsg,
       }]);
     } finally {
       setIsTyping(false);
@@ -137,7 +148,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
       <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1rem', fontWeight: 500, margin: 0 }}>finance ai</h2>
-          <p style={{ fontSize: '0.6875rem', color: 'var(--green)', margin: '0.125rem 0 0' }}>● online</p>
+          <p style={{ fontSize: '0.6875rem', color: apiKey ? 'var(--green)' : 'var(--yellow)', margin: '0.125rem 0 0' }}>
+            {apiKey ? '● gemini online' : '◌ local mode'}
+          </p>
         </div>
         <button onClick={clearHistory} style={{ background: 'transparent', border: 'none', color: 'var(--text-3)' }} aria-label="Clear chat">
           <Trash2 size={16} />
@@ -195,7 +208,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
               )}
             </div>
             <p style={{ fontSize: '0.5625rem', color: 'var(--text-4)', marginTop: '0.2rem', textAlign: m.sender === 'user' ? 'right' : 'left', padding: '0 0.25rem' }}>
-              {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {m.timestamp.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
             </p>
           </div>
         ))}
@@ -211,19 +224,18 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
       <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', marginTop: '0.5rem' }}>
         <input
           type="text"
-          placeholder={apiKey ? "add entry or ask a question..." : "Enter key in Settings first!"}
-          disabled={!apiKey}
+          placeholder={apiKey ? "add entry or ask a question..." : "ask a question or add entry..."}
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !isTyping && process(inputText)}
+          onKeyDown={e => e.key === 'Enter' && !isTyping && inputText.trim() && process(inputText)}
           className="input"
-          style={{ flex: 1, borderRadius: 'var(--radius-full)', padding: '0.625rem 1rem', fontSize: '0.8125rem', opacity: apiKey ? 1 : 0.5 }}
+          style={{ flex: 1, borderRadius: 'var(--radius-full)', padding: '0.625rem 1rem' }}
         />
         <button
-          disabled={!apiKey || isTyping}
+          disabled={isTyping}
           onClick={() => inputText.trim() && process(inputText)}
           className="btn-primary"
-          style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, flexShrink: 0, opacity: apiKey && !isTyping ? 1 : 0.5 }}
+          style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, flexShrink: 0, opacity: !isTyping ? 1 : 0.5 }}
         >
           <Send size={14} />
         </button>

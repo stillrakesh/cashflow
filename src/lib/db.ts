@@ -12,8 +12,12 @@ export const listenToTransactions = (callback: (transactions: Transaction[]) => 
     snapshot.forEach(doc => {
       txns.push(doc.data() as Transaction);
     });
-    // Sort by descending date
-    txns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort by descending creation/update time to maintain stable order
+    txns.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || a.date).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || b.date).getTime();
+      return timeB - timeA;
+    });
     callback(txns);
   }, (error) => {
     console.error("Error listening to transactions: ", error);

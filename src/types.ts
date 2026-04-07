@@ -105,6 +105,7 @@ export interface Transaction {
   classification?: ExpenseClassification;
   editHistory?: EditRecord[];
   createdAt?: string;
+  updatedAt?: string;
   vendor?: string; // Who you paid
   account?: string; // External account tracking (e.g. Swiggy, Rakesh HDFC)
 }

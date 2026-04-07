@@ -56,45 +56,65 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
   const cancelEdit = () => { setEditingId(null); setEditValues({}); };
 
+  const IST_TZ = 'Asia/Kolkata';
+
+  // Get YYYY-MM-DD in IST for a date string
+  const getISTDateStr = (d: string) =>
+    new Date(d).toLocaleDateString('en-CA', { timeZone: IST_TZ });
+
   const formatGroupHeader = (d: string) => {
-    const date = new Date(d);
-    const today = new Date();
-    const yest = new Date(); yest.setDate(yest.getDate() - 1);
-    
-    const getLocalYMD = (dt: Date) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
-    
-    const dStr = getLocalYMD(date);
-    if (dStr === getLocalYMD(today)) return 'TODAY';
-    if (dStr === getLocalYMD(yest)) return 'YESTERDAY';
-    
-    const day = date.getDate();
-    const suffix = ['TH', 'ST', 'ND', 'RD'][(day % 10 > 3 ? 0 : (day % 100 - day % 10 != 10 ? day % 10 : 0))];
-    const month = date.toLocaleDateString('en-IN', { month: 'long' }).toUpperCase();
+    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: IST_TZ });
+    const yestDate = new Date(); yestDate.setDate(yestDate.getDate() - 1);
+    const yestIST  = yestDate.toLocaleDateString('en-CA', { timeZone: IST_TZ });
+    const dStr = getISTDateStr(d);
+
+    if (dStr === todayIST) return 'TODAY';
+    if (dStr === yestIST)  return 'YESTERDAY';
+
+    // Format as "8TH APRIL"
+    const dateObj = new Date(d);
+    const day = parseInt(new Date(d).toLocaleDateString('en-IN', { day: 'numeric', timeZone: IST_TZ }), 10);
+    const suffix = ['TH','ST','ND','RD'][(day % 10 > 3 ? 0 : (day % 100 - day % 10 !== 10 ? day % 10 : 0))];
+    const month = dateObj.toLocaleDateString('en-IN', { month: 'long', timeZone: IST_TZ }).toUpperCase();
     return `${day}${suffix} ${month}`;
   };
 
   const formatItemDate = (d: string) => {
-    const date = new Date(d);
-    const day = date.getDate();
-    const suffix = ['th', 'st', 'nd', 'rd'][(day % 10 > 3 ? 0 : (day % 100 - day % 10 != 10 ? day % 10 : 0))];
-    const month = date.toLocaleDateString('en-IN', { month: 'short' }).toLowerCase();
-    const time = date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-    return `${day}${suffix} ${month} ${time}`;
+    const day = parseInt(new Date(d).toLocaleDateString('en-IN', { day: 'numeric', timeZone: IST_TZ }), 10);
+    const suffix = ['th','st','nd','rd'][(day % 10 > 3 ? 0 : (day % 100 - day % 10 !== 10 ? day % 10 : 0))];
+    const month = new Date(d).toLocaleDateString('en-IN', { month: 'short', timeZone: IST_TZ }).toLowerCase();
+    return `${day}${suffix} ${month}`;
   };
 
-  // Group by day exactly
-  const grouped: Record<string, Transaction[]> = {};
+  // Group by IST date, preserving newest-first order within each group
+  // Use a Map so insertion order = the order transactions arrive (already sorted newest-first by parent)
+  const groupMap = new Map<string, { sortKey: string; txns: Transaction[] }>();
   transactions.forEach(t => {
-    const key = formatGroupHeader(t.date);
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(t);
+    const istDateStr = getISTDateStr(t.date); // YYYY-MM-DD in IST — used as sort key
+    const label = formatGroupHeader(t.date);
+    if (!groupMap.has(label)) {
+      groupMap.set(label, { sortKey: istDateStr, txns: [] });
+    }
+    groupMap.get(label)!.txns.push(t);
   });
+  // Sort groups newest-first, and sort items inside them newest-first too
+  const grouped = Array.from(groupMap.entries())
+    .sort((a, b) => b[1].sortKey.localeCompare(a[1].sortKey))
+    .map(([label, { txns }]) => {
+      // Sort strictly by the moment the transaction was created or updated
+      txns.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt || a.date).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || b.date).getTime();
+        return timeB - timeA;
+      });
+      return { label, txns };
+    });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {Object.entries(grouped).map(([monthKey, txns]) => (
-        <div key={monthKey}>
-          <p className="section-label" style={{ marginBottom: '1.25rem' }}>{monthKey}</p>
+      {grouped.map(({ label, txns }) => (
+        <div key={label}>
+          <p className="section-label" style={{ marginBottom: '1.25rem' }}>{label}</p>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {txns.map((txn, i) => {

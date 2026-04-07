@@ -51,8 +51,8 @@ Rules for Command (isQuestion = false):
 
 export const parseWithGemini = async (text: string, apiKey: string, transactions: Transaction[]): Promise<GeminiDualIntent> => {
   try {
-    const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const ai = new GoogleGenerativeAI(apiKey.trim());
+    const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     // Build the CSV context of the last ~500 records
     const recentTxns = transactions.filter(t => t.status === 'approved').slice(0, 500);
@@ -71,11 +71,13 @@ export const parseWithGemini = async (text: string, apiKey: string, transactions
       "${text}"
     `;
 
-    const response = await model.generateContent(promptContext);
-    const outputString = response.response.text() || "{}";
-    const cleanJson = outputString.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const response = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: promptContext }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
     
-    return JSON.parse(cleanJson);
+    const outputString = response.response.text() || "{}";
+    return JSON.parse(outputString.trim());
   } catch (err) {
     console.error('Gemini API Error:', err);
     throw err;
@@ -85,7 +87,7 @@ export const parseWithGemini = async (text: string, apiKey: string, transactions
 export const parseReceiptWithGemini = async (base64Image: string, mimeType: string, apiKey: string): Promise<GeminiParsedTransaction | null> => {
   try {
     const ai = new GoogleGenerativeAI(apiKey);
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `
       You are a precise invoice/receipt scanner for "CafeFlow".

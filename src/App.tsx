@@ -11,16 +11,12 @@ import FilterPanel from './components/shared/FilterPanel';
 import Login from './components/auth/Login';
 import ClearDataModal from './components/shared/ClearDataModal';
 import DownloadStatementModal from './components/shared/DownloadStatementModal';
-import {
-  mockUsers,
-  mockTransactions as initialTransactions,
-  versions,
-} from './utils/mockData';
+import { versions } from './utils/mockData';
 import { calculateStats, generateAIInsights, formatINR, getTodaySnapshot, getPeriodSummary } from './utils/financeUtils';
 import { CATEGORY_CLASSIFICATION } from './types';
 import type { Transaction, User, FilterState, ThemeMode, EditRecord } from './types';
 import { 
-  Search, SlidersHorizontal, Sun, Moon, ChevronRight, ChevronDown, Download, CheckCircle2, FileText
+  Search, SlidersHorizontal, Sun, Moon, ChevronRight, ChevronDown, Download, CheckCircle2, FileText, Eye, EyeOff
 } from 'lucide-react';
 import { generateMonthlyReport, generateTransactionStatement } from './utils/pdfUtils';
 import { 
@@ -34,12 +30,17 @@ const API_KEY_STORAGE = 'cafeflow_gemini_key';
 const USERS_STORAGE_KEY = 'cafeflow_users';
 const CURRENT_USER_SESSION_KEY = 'cafeflow_logged_in_user';
 
+// Returns the current UTC ISO string for storage.
+// Display formatting (IST) is handled separately in the UI layer with timeZone: 'Asia/Kolkata'.
+const nowIST = (): string => new Date().toISOString();
+
 function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem(THEME_KEY) as ThemeMode) || 'dark');
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem(THEME_KEY, theme); }, [theme]);
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
+  const [showApiKey, setShowApiKey] = useState(false);
   useEffect(() => { localStorage.setItem(API_KEY_STORAGE, geminiApiKey); }, [geminiApiKey]);
 
   const [users, setUsers] = useState<User[]>([]);
@@ -47,14 +48,13 @@ function App() {
   const [isDbReady, setIsDbReady] = useState(false);
 
   useEffect(() => {
-    // Attempt local storage migration once on mount
-    let localUsers = [];
-    let localTxns = [];
+    // Attempt local storage migration once on mount.
+    // IMPORTANT: Fall back to [] not mock data — prevents demo data resurrection after a wipe.
+    let localUsers: User[] = [];
+    let localTxns: Transaction[] = [];
     try { 
       const u = localStorage.getItem(USERS_STORAGE_KEY); if(u) localUsers = JSON.parse(u);
-      else localUsers = mockUsers;
       const t = localStorage.getItem(STORAGE_KEY); if(t) localTxns = JSON.parse(t);
-      else localTxns = initialTransactions;
     } catch {}
 
     const setupFn = async () => {
@@ -132,15 +132,19 @@ function App() {
         (t.account || '').toLowerCase().includes(q)
       ); 
     }
-    if (f.dateFrom) r = r.filter(t => t.date.split('T')[0] >= f.dateFrom);
-    if (f.dateTo) r = r.filter(t => t.date.split('T')[0] <= f.dateTo);
+    if (f.dateFrom) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) >= f.dateFrom);
+    if (f.dateTo) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) <= f.dateTo);
     if (f.categories.length) r = r.filter(t => f.categories.includes(t.category));
     if (f.paymentTypes.length) r = r.filter(t => f.paymentTypes.includes(t.paymentType));
     if (f.types.length) r = r.filter(t => f.types.includes(t.type));
     if (f.classifications.length) r = r.filter(t => { const c = t.classification || CATEGORY_CLASSIFICATION[t.category] || 'variable'; return f.classifications.includes(c); });
     if (f.statuses.length) r = r.filter(t => f.statuses.includes(t.status));
     if (f.accounts?.length) r = r.filter(t => t.account && f.accounts.includes(t.account));
-    r.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    r.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || a.date).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || b.date).getTime();
+      return timeB - timeA;
+    });
     return r;
   };
 
@@ -177,11 +181,12 @@ function App() {
     const edits: EditRecord[] = [];
     Object.entries(updates).forEach(([k, v]) => { const old = (txn as any)[k]; if (old !== undefined && String(old) !== String(v)) edits.push({ field: k, oldValue: String(old), newValue: String(v), timestamp: new Date().toISOString() }); });
     if (updates.date && !updates.date.includes('T')) updates.date = new Date(updates.date).toISOString();
-    updateTransactionInDb(id, { ...updates, editHistory: [...(txn.editHistory || []), ...edits] });
+    updateTransactionInDb(id, { ...updates, editHistory: [...(txn.editHistory || []), ...edits], updatedAt: new Date().toISOString() });
   }, [transactions]);
 
   const handleAddTransaction = useCallback((t: Partial<Transaction>) => {
-    const entry: any = { id: Math.random().toString(36).substr(2, 9), userId: currentUser?.id || '1', userName: currentUser?.name || 'Admin', status: currentUser?.role === 'admin' ? 'approved' : 'pending', type: 'expense', amount: 0, date: new Date().toISOString(), category: 'misc', paymentType: 'cash', createdAt: new Date().toISOString(), vendor: t.category, ...t };
+    const now = nowIST();
+    const entry: any = { id: Math.random().toString(36).substr(2, 9), userId: currentUser?.id || '1', userName: currentUser?.name || 'Admin', status: currentUser?.role === 'admin' ? 'approved' : 'pending', type: 'expense', amount: 0, date: now, category: 'misc', paymentType: 'cash', createdAt: now, vendor: t.category, ...t };
     Object.keys(entry).forEach(key => { if (entry[key] === undefined) delete entry[key]; });
     addTransactionToDb(entry as Transaction);
   }, [currentUser]);
@@ -473,16 +478,32 @@ function App() {
             <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem' }}>
               <p style={{ fontSize: '0.8125rem', fontWeight: 500, margin: '0 0 0.5rem' }}>gemini api key</p>
               <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', margin: '0 0 0.75rem', lineHeight: 1.4 }}>
-                required for advanced natural language parsing. get a free key from google ai studio.
+                required for AI parsing &amp; chat. get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>Google AI Studio</a>.
               </p>
-              <input 
-                type="password" 
-                className="input" 
-                placeholder="AIzaSy..." 
-                value={geminiApiKey} 
-                onChange={e => setGeminiApiKey(e.target.value)} 
-                style={{ padding: '0.625rem', fontSize: '0.8125rem' }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showApiKey ? 'text' : 'password'}
+                  className="input" 
+                  placeholder="AIzaSy..." 
+                  value={geminiApiKey} 
+                  onChange={e => setGeminiApiKey(e.target.value)}
+                  autoCorrect="off" autoCapitalize="off" spellCheck={false}
+                  style={{ padding: '0.625rem 2.5rem 0.625rem 0.75rem', fontSize: '0.8125rem', fontFamily: geminiApiKey && !showApiKey ? 'monospace' : 'inherit' }}
+                />
+                <button
+                  onClick={() => setShowApiKey(v => !v)}
+                  style={{ position: 'absolute', right: '0.625rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-3)', padding: '0.25rem', display: 'flex' }}
+                  aria-label={showApiKey ? 'Hide key' : 'Show key'}
+                >
+                  {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.625rem', alignItems: 'center' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: geminiApiKey ? 'var(--green)' : 'var(--yellow)', flexShrink: 0 }} />
+                <span style={{ fontSize: '0.6875rem', color: geminiApiKey ? 'var(--green)' : 'var(--yellow)' }}>
+                  {geminiApiKey ? 'key configured — gemini AI active' : 'no key — local analytics only'}
+                </span>
+              </div>
             </div>
 
             <p className="section-label">user profile</p>

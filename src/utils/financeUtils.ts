@@ -6,6 +6,23 @@ import type { Transaction, DashboardStats, DailyData, AIInsight, ExpenseClassifi
 import { CATEGORY_CLASSIFICATION } from '../types';
 
 /**
+ * Get today's date string in IST (Asia/Kolkata) — format: YYYY-MM-DD
+ * This ensures date boundaries match Mumbai time regardless of server/browser timezone.
+ */
+const istToday = (): string => {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+};
+
+/**
+ * Get an IST-anchored Date object offset N days from today
+ */
+const istDaysAgo = (n: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+};
+
+/**
  * Format a number to Indian Rupee format (₹1,20,500)
  */
 export const formatINR = (amount: number): string => {
@@ -96,8 +113,11 @@ export const estimateCOGS = (transactions: Transaction[]): number => {
  * Calculate Today's Snapshot
  */
 export const getTodaySnapshot = (transactions: Transaction[]): TodaySnapshot => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayTxns = transactions.filter(t => t.date.split('T')[0] === todayStr);
+  const todayStr = istToday(); // IST-correct date string
+  const todayTxns = transactions.filter(t => {
+    const txnDateIST = new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    return txnDateIST === todayStr;
+  });
   
   const approved = todayTxns.filter(t => t.status === 'approved');
   const pendingCount = todayTxns.filter(t => t.status === 'pending').length;
@@ -157,8 +177,7 @@ export const getPeriodSummary = (transactions: Transaction[], preset: string): P
  * Get date range from preset
  */
 export const getDateRangeFromPreset = (preset: DatePreset): { dateFrom: string; dateTo: string } => {
-  const today = new Date();
-  const dateTo = today.toISOString().split('T')[0];
+  const dateTo = istToday(); // IST-correct today
   let dateFrom = '';
 
   switch (preset) {
@@ -166,44 +185,44 @@ export const getDateRangeFromPreset = (preset: DatePreset): { dateFrom: string; 
       dateFrom = dateTo;
       break;
     case 'yesterday': {
-      const yest = new Date(today);
-      yest.setDate(yest.getDate() - 1);
-      const yestStr = yest.toISOString().split('T')[0];
+      const yestStr = istDaysAgo(1);
       return { dateFrom: yestStr, dateTo: yestStr };
     }
     case 'last_7': {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 7);
-      dateFrom = d.toISOString().split('T')[0];
+      dateFrom = istDaysAgo(7);
       break;
     }
     case 'last_30': {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 30);
-      dateFrom = d.toISOString().split('T')[0];
+      dateFrom = istDaysAgo(30);
       break;
     }
     case 'this_month': {
-      dateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      const now = new Date();
+      const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      dateFrom = new Date(istNow.getFullYear(), istNow.getMonth(), 1).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       break;
     }
     case 'this_year': {
-      dateFrom = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+      const now = new Date();
+      const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      dateFrom = new Date(istNow.getFullYear(), 0, 1).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       break;
     }
     case 'last_month': {
-      const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+      const now = new Date();
+      const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const firstDay = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
+      const lastDay = new Date(istNow.getFullYear(), istNow.getMonth(), 0);
       return {
-        dateFrom: firstDay.toISOString().split('T')[0],
-        dateTo: lastDay.toISOString().split('T')[0]
+        dateFrom: firstDay.toLocaleDateString('en-CA'),
+        dateTo: lastDay.toLocaleDateString('en-CA'),
       };
     }
     case 'this_week': {
-      const d = new Date(today);
-      const day = d.getDay() || 7; // Get current day number, converting Sun. to 7
-      if (day !== 1) d.setHours(-24 * (day - 1)); // adjust when day is not monday
-      dateFrom = d.toISOString().split('T')[0];
+      const d = new Date();
+      const day = d.getDay() || 7;
+      if (day !== 1) d.setHours(-24 * (day - 1));
+      dateFrom = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       break;
     }
     case 'all':
@@ -225,10 +244,12 @@ export const calculateDailyData = (transactions: Transaction[], days: number = 7
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const dayTxns = approved.filter(t => t.date.split('T')[0] === dateStr);
+    const dateStr = istDaysAgo(i);
+    const d = new Date(dateStr + 'T00:00:00+05:30');
+    const dayTxns = approved.filter(t => {
+      const txnDateIST = new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      return txnDateIST === dateStr;
+    });
     const sales = dayTxns.filter(t => t.type === 'sale').reduce((a, t) => a + t.amount, 0);
     const expenses = dayTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
     result.push({

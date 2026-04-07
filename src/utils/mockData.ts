@@ -10,6 +10,8 @@ export const mockUsers: User[] = [
   { id: '3', name: 'Alice (Staff)', email: 'alice@cafe.com', role: 'user', pin: '1234' },
 ];
 
+// Generates a date N days ago as a proper UTC ISO string.
+// Display is formatted in IST by the UI layer.
 const daysAgo = (n: number, hour = 10) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
