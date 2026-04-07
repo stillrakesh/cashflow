@@ -181,8 +181,9 @@ function App() {
   }, [transactions]);
 
   const handleAddTransaction = useCallback((t: Partial<Transaction>) => {
-    const entry: Transaction = { id: Math.random().toString(36).substr(2, 9), userId: currentUser?.id || '1', userName: currentUser?.name || 'Admin', status: currentUser?.role === 'admin' ? 'approved' : 'pending', type: 'expense', amount: 0, date: new Date().toISOString(), category: 'misc', paymentType: 'cash', createdAt: new Date().toISOString(), vendor: t.category, ...t };
-    addTransactionToDb(entry);
+    const entry: any = { id: Math.random().toString(36).substr(2, 9), userId: currentUser?.id || '1', userName: currentUser?.name || 'Admin', status: currentUser?.role === 'admin' ? 'approved' : 'pending', type: 'expense', amount: 0, date: new Date().toISOString(), category: 'misc', paymentType: 'cash', createdAt: new Date().toISOString(), vendor: t.category, ...t };
+    Object.keys(entry).forEach(key => { if (entry[key] === undefined) delete entry[key]; });
+    addTransactionToDb(entry as Transaction);
   }, [currentUser]);
 
   const handleDrillDown = useCallback((cat: string) => { setTxnFilters(f => ({...f, categories: [cat]})); setActiveTab('transactions'); }, []);

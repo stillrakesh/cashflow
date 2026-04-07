@@ -61,14 +61,16 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
   const handleSave = () => {
     if (!canSave) return;
     const cat = type === 'sale' ? 'sale' : category.trim().toLowerCase() || 'misc';
-    onAdd({
+    const txnData: Partial<Transaction> = {
       type, amount: parseFloat(amount), category: cat, paymentType,
       notes: notes.trim(),
       account: account.trim(),
       vendor: vendor.trim(),
       date: new Date(date).toISOString(),
-      classification: type === 'expense' ? (CATEGORY_CLASSIFICATION[cat] || 'variable') : undefined,
-    });
+    };
+    if (type === 'expense') txnData.classification = CATEGORY_CLASSIFICATION[cat] || 'variable';
+    
+    onAdd(txnData);
     onClose();
   };
 
