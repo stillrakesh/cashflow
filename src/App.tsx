@@ -62,6 +62,16 @@ function App() {
       await initializeDatabase(localUsers as User[], localTxns as Transaction[]);
       
       const unsubUsers = listenToUsers((fetchedUsers) => {
+        // Migration: Ensure all users have a username
+        const needsMigration = fetchedUsers.some(u => !u.username);
+        if (needsMigration) {
+          fetchedUsers.forEach(u => {
+            if (!u.username) {
+              const fallback = u.email ? u.email.split('@')[0] : u.name.toLowerCase().replace(/\s+/g, '_');
+              updateUserInDb({ ...u, username: fallback });
+            }
+          });
+        }
         setUsers(fetchedUsers);
       });
       
