@@ -23,6 +23,10 @@ import {
   Search, SlidersHorizontal, Sun, Moon, ChevronRight, ChevronDown, Download, CheckCircle2, FileText
 } from 'lucide-react';
 import { generateMonthlyReport, generateTransactionStatement } from './utils/pdfUtils';
+import { 
+  listenToTransactions, listenToUsers, addTransactionToDb, 
+  updateTransactionInDb, deleteTransactionFromDb, initializeDatabase, updateUserInDb, deleteUserFromDb
+} from './lib/db';
 
 const STORAGE_KEY = 'cafeflow_transactions';
 const THEME_KEY = 'cafeflow_theme';
@@ -38,11 +42,41 @@ function App() {
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
   useEffect(() => { localStorage.setItem(API_KEY_STORAGE, geminiApiKey); }, [geminiApiKey]);
 
-  const [users, setUsers] = useState<User[]>(() => {
-    const s = localStorage.getItem(USERS_STORAGE_KEY);
-    return s ? JSON.parse(s) : mockUsers;
-  });
-  useEffect(() => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users)); }, [users]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isDbReady, setIsDbReady] = useState(false);
+
+  useEffect(() => {
+    // Attempt local storage migration once on mount
+    let localUsers = [];
+    let localTxns = [];
+    try { 
+      const u = localStorage.getItem(USERS_STORAGE_KEY); if(u) localUsers = JSON.parse(u);
+      else localUsers = mockUsers;
+      const t = localStorage.getItem(STORAGE_KEY); if(t) localTxns = JSON.parse(t);
+      else localTxns = initialTransactions;
+    } catch {}
+
+    const setupFn = async () => {
+      await initializeDatabase(localUsers as User[], localTxns as Transaction[]);
+      
+      const unsubUsers = listenToUsers((fetchedUsers) => {
+        setUsers(fetchedUsers);
+      });
+      
+      const unsubTxns = listenToTransactions((fetchedTxns) => {
+        setTransactions(fetchedTxns);
+        setIsDbReady(true);
+      });
+
+      return () => {
+        unsubUsers();
+        unsubTxns();
+      };
+    };
+
+    setupFn();
+  }, []);
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const s = sessionStorage.getItem(CURRENT_USER_SESSION_KEY);
@@ -61,12 +95,6 @@ function App() {
   };
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s); } catch {}
-    return initialTransactions;
-  });
-
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }, [transactions]);
 
   const [showDashboardFilters, setShowDashboardFilters] = useState(false);
   const [showTxnFilters, setShowTxnFilters] = useState(false);
@@ -125,37 +153,36 @@ function App() {
   const pendingCount = transactions.filter(t => t.status === 'pending').length;
   const periodSummary = useMemo(() => getPeriodSummary(filteredTransactions, txnFilters.datePreset), [filteredTransactions, txnFilters.datePreset]);
 
-  const handleApprove = useCallback((id: string) => { setTransactions(p => p.map(t => t.id === id ? {...t, status: 'approved'} : t)); }, []);
-  const handleReject = useCallback((id: string) => { setTransactions(p => p.map(t => t.id === id ? {...t, status: 'rejected'} : t)); }, []);
-  const handleDelete = useCallback((id: string) => { setTransactions(p => p.filter(t => t.id !== id)); }, []);
+  const handleApprove = useCallback((id: string) => { updateTransactionInDb(id, { status: 'approved' }); }, []);
+  const handleReject = useCallback((id: string) => { updateTransactionInDb(id, { status: 'rejected' }); }, []);
+  const handleDelete = useCallback((id: string) => { deleteTransactionFromDb(id); }, []);
 
   const handleClearData = (options: { from?: string, to?: string, all?: boolean }) => {
     if (options.all) {
-      setTransactions([]);
+      transactions.forEach(t => deleteTransactionFromDb(t.id));
       localStorage.removeItem(STORAGE_KEY);
     } else if (options.from && options.to) {
-      setTransactions(p => p.filter(t => {
+      transactions.filter(t => {
         const d = t.date.split('T')[0];
-        return d < options.from! || d > options.to!;
-      }));
+        return d >= options.from! && d <= options.to!;
+      }).forEach(t => deleteTransactionFromDb(t.id));
     }
     setShowClearModal(false);
     alert('Data purge completed.');
   };
 
   const handleEdit = useCallback((id: string, updates: Partial<Transaction>) => {
-    setTransactions(p => p.map(t => {
-      if (t.id !== id) return t;
-      const edits: EditRecord[] = [];
-      Object.entries(updates).forEach(([k, v]) => { const old = (t as any)[k]; if (old !== undefined && String(old) !== String(v)) edits.push({ field: k, oldValue: String(old), newValue: String(v), timestamp: new Date().toISOString() }); });
-      if (updates.date && !updates.date.includes('T')) updates.date = new Date(updates.date).toISOString();
-      return { ...t, ...updates, editHistory: [...(t.editHistory || []), ...edits] };
-    }));
-  }, []);
+    const txn = transactions.find(t => t.id === id);
+    if (!txn) return;
+    const edits: EditRecord[] = [];
+    Object.entries(updates).forEach(([k, v]) => { const old = (txn as any)[k]; if (old !== undefined && String(old) !== String(v)) edits.push({ field: k, oldValue: String(old), newValue: String(v), timestamp: new Date().toISOString() }); });
+    if (updates.date && !updates.date.includes('T')) updates.date = new Date(updates.date).toISOString();
+    updateTransactionInDb(id, { ...updates, editHistory: [...(txn.editHistory || []), ...edits] });
+  }, [transactions]);
 
   const handleAddTransaction = useCallback((t: Partial<Transaction>) => {
     const entry: Transaction = { id: Math.random().toString(36).substr(2, 9), userId: currentUser?.id || '1', userName: currentUser?.name || 'Admin', status: currentUser?.role === 'admin' ? 'approved' : 'pending', type: 'expense', amount: 0, date: new Date().toISOString(), category: 'misc', paymentType: 'cash', createdAt: new Date().toISOString(), vendor: t.category, ...t };
-    setTransactions(p => [entry, ...p]);
+    addTransactionToDb(entry);
   }, [currentUser]);
 
   const handleDrillDown = useCallback((cat: string) => { setTxnFilters(f => ({...f, categories: [cat]})); setActiveTab('transactions'); }, []);
@@ -475,9 +502,9 @@ function App() {
               <button 
                 onClick={() => {
                   const np = prompt('Enter new 4-digit PIN:');
-                  if (np && np.length === 4) {
-                    setUsers(p => p.map(u => u.id === currentUser?.id ? {...u, pin: np} : u));
-                    setCurrentUser(u => u ? {...u, pin: np} : null);
+                  if (np && np.length === 4 && currentUser) {
+                    updateUserInDb({ ...currentUser, pin: np });
+                    setCurrentUser({ ...currentUser, pin: np });
                     alert('PIN updated. Please use new PIN for future logins.');
                   }
                 }} 
@@ -501,7 +528,7 @@ function App() {
                         <button 
                           onClick={() => {
                             const np = prompt(`Reset PIN for ${u.name}:`);
-                            if(np && np.length === 4) setUsers(p => p.map(x => x.id === u.id ? {...x, pin: np} : x));
+                            if(np && np.length === 4) updateUserInDb({ ...u, pin: np });
                           }}
                           className="btn-ghost" 
                           style={{ color: 'var(--blue)', fontSize: '0.75rem' }}
@@ -509,7 +536,7 @@ function App() {
                           reset PIN
                         </button>
                         <button 
-                          onClick={() => { if(confirm('Remove this user?')) setUsers(prev => prev.filter(x => x.id !== u.id)); }} 
+                          onClick={() => { if(confirm('Remove this user?')) deleteUserFromDb(u.id); }} 
                           className="btn-ghost" 
                           style={{ color: 'var(--red)', fontSize: '0.75rem' }}
                         >
@@ -523,7 +550,7 @@ function App() {
                       const name = prompt('Enter staff name:');
                       const pin = prompt('Enter 4-digit PIN:');
                       if(name && pin && pin.length === 4) {
-                        setUsers(prev => [...prev, { id: Date.now().toString(), name, email: `${name.toLowerCase()}@cafe.com`, role: 'user', pin }]);
+                        updateUserInDb({ id: Date.now().toString(), name, email: `${name.toLowerCase()}@cafe.com`, role: 'user', pin });
                       }
                     }}
                     style={{ width: '100%', padding: '0.75rem', background: 'none', border: 'none', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 600 }}
@@ -592,6 +619,15 @@ function App() {
     }
   };
 
+  if (!isDbReady) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-0)' }}>
+        <div className="loader spin" style={{ width: '2rem', height: '2rem', border: '3px solid var(--border)', borderTopColor: 'var(--green)', borderRadius: '50%' }} />
+        <p style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--text-3)', letterSpacing: '0.05em' }}>syncing to cloud...</p>
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return <Login users={users} onLogin={handleLogin} />;
   }
@@ -609,14 +645,7 @@ function App() {
         <QuickAdd 
           onClose={() => setShowQuickAdd(false)} 
           onAdd={(t) => {
-            setTransactions(p => [{ 
-              ...t as Transaction, 
-              id: `t${Date.now()}`, 
-              userId: currentUser.id, 
-              userName: currentUser.name, 
-              status: currentUser.role === 'admin' ? 'approved' : 'pending', 
-              createdAt: new Date().toISOString() 
-            }, ...p]);
+            handleAddTransaction(t);
             setShowQuickAdd(false);
           }}
         />
