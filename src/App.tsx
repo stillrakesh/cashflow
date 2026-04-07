@@ -584,9 +584,17 @@ function App() {
                   <button 
                     onClick={() => {
                       const name = prompt('Enter staff name:');
+                      const username = prompt('Enter unique staff username:');
                       const pin = prompt('Enter 4-digit PIN:');
-                      if(name && pin && pin.length === 4) {
-                        updateUserInDb({ id: Date.now().toString(), name, email: `${name.toLowerCase()}@cafe.com`, role: 'user', pin });
+                      if(name && username && pin && pin.length === 4) {
+                        updateUserInDb({ 
+                          id: Date.now().toString(), 
+                          name, 
+                          username: username.toLowerCase().trim(),
+                          email: `${username.toLowerCase().trim()}@cafe.com`, 
+                          role: 'user', 
+                          pin 
+                        });
                       }
                     }}
                     style={{ width: '100%', padding: '0.75rem', background: 'none', border: 'none', color: 'var(--green)', fontSize: '0.75rem', fontWeight: 600 }}
@@ -665,7 +673,20 @@ function App() {
   }
 
   if (!currentUser) {
-    return <Login users={users} onLogin={handleLogin} />;
+    return <Login 
+      users={users} 
+      onLogin={handleLogin} 
+      onSignUp={(u) => {
+        const newUser = { 
+          id: Date.now().toString(), 
+          ...u,
+          username: u.username || '', // ensure it exists
+        } as User;
+        updateUserInDb(newUser);
+        handleLogin(newUser);
+        alert('Admin account created successfully!');
+      }} 
+    />;
   }
 
   return (

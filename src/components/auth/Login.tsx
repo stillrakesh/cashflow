@@ -3,34 +3,75 @@ import type { User } from '../../types';
 import PinLock from './PinLock';
 import { ChefHat, ShieldCheck, Mail, Phone, ArrowLeft, KeyRound } from 'lucide-react';
 
+type AuthView = 'initial' | 'admin-login' | 'staff-login' | 'sign-up' | 'pin-entry' | 'recovery';
+type RecoveryStep = 'select' | 'code' | 'reset';
+
 interface LoginProps {
   users: User[];
   onLogin: (user: User) => void;
+  onSignUp: (user: Partial<User>) => void;
 }
 
-type AuthView = 'initial' | 'admin-form' | 'staff-select' | 'pin-entry' | 'recovery';
-type RecoveryStep = 'select' | 'code' | 'reset';
-
-const Login: React.FC<LoginProps> = ({ users, onLogin }) => {
+const Login: React.FC<LoginProps> = ({ users, onLogin, onSignUp }) => {
   const [view, setView] = useState<AuthView>('initial');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [adminEmail, setAdminEmail] = useState('');
+  const [loginId, setLoginId] = useState(''); // Email or Username
+  const [staffUsername, setStaffUsername] = useState('');
+  
+  // Sign up state
+  const [signupName, setSignupName] = useState('');
+  const [signupUsername, setSignupUsername] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPin, setSignupPin] = useState('');
+
   const [recoveryStep, setRecoveryStep] = useState<RecoveryStep>('select');
   const [recoveryCode, setRecoveryCode] = useState('');
 
   const handleAdminLoginSubmit = () => {
-    const admin = users.find(u => u.role === 'admin' && u.email.toLowerCase() === adminEmail.toLowerCase());
+    const q = loginId.toLowerCase().trim();
+    const admin = users.find(u => 
+      u.role === 'admin' && 
+      ((u.email && u.email.toLowerCase() === q) || (u.username && u.username.toLowerCase() === q))
+    );
     if (admin) {
       setSelectedUser(admin);
       setView('pin-entry');
     } else {
-      alert('Admin record not found. Use "admin@cafe.com"');
+      alert('Admin record not found. Please check your Email or Username.');
     }
   };
 
-  const handleStaffSelect = (u: User) => {
-    setSelectedUser(u);
-    setView('pin-entry');
+  const handleStaffLoginSubmit = () => {
+    const q = staffUsername.toLowerCase().trim();
+    const staff = users.find(u => u.role !== 'admin' && u.username && u.username.toLowerCase() === q);
+    if (staff) {
+      setSelectedUser(staff);
+      setView('pin-entry');
+    } else {
+      alert('Staff member not found. Please check your Username.');
+    }
+  };
+
+  const handleSignUpSubmit = () => {
+    if (!signupName || !signupUsername || !signupEmail || signupPin.length !== 4) {
+      alert('Please fill all required fields correctly.');
+      return;
+    }
+    // Check if username/email taken
+    if (users.find(u => u.username === signupUsername || u.email === signupEmail)) {
+      alert('Username or Email already exists.');
+      return;
+    }
+
+    onSignUp({
+      name: signupName,
+      username: signupUsername,
+      email: signupEmail,
+      phone: signupPhone,
+      pin: signupPin,
+      role: 'admin'
+    });
   };
 
   const startRecovery = () => {
@@ -100,7 +141,7 @@ const Login: React.FC<LoginProps> = ({ users, onLogin }) => {
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Account Restored</h2>
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '2rem' }}>Identity verified. Please log in with your credentials.</p>
               <button 
-                onClick={() => setView('admin-form')} 
+                onClick={() => setView('admin-login')} 
                 className="btn-primary" style={{ width: '100%', padding: '0.875rem' }}
               >
                 Go to Login
@@ -150,53 +191,95 @@ const Login: React.FC<LoginProps> = ({ users, onLogin }) => {
       <div style={{ width: '100%', maxWidth: '340px' }}>
         {view === 'initial' && (
           <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-            <button onClick={() => setView('admin-form')} className="btn-primary" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-               <ShieldCheck size={18} /> Administrative Access
+            <button onClick={() => setView('admin-login')} className="btn-primary" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+               <ShieldCheck size={18} /> Admin Sign In
             </button>
-            <button onClick={() => setView('staff-select')} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: 'var(--bg-1)', border: '1px solid var(--border)' }}>
-               <ChefHat size={18} color="var(--text-2)" /> Staff Entry
+            <button onClick={() => setView('staff-login')} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', background: 'var(--bg-1)', border: '1px solid var(--border)' }}>
+               <ChefHat size={18} color="var(--text-2)" /> Staff Sign In
             </button>
+            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginBottom: '0.75rem' }}>New business?</p>
+              <button 
+                onClick={() => setView('sign-up')} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-0)', fontWeight: 600, fontSize: '0.8125rem', textDecoration: 'underline' }}
+              >
+                Create Admin Account
+              </button>
+            </div>
           </div>
         )}
 
-        {view === 'admin-form' && (
+        {view === 'admin-login' && (
           <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <button onClick={() => setView('initial')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.5rem' }}>
               <ArrowLeft size={14} /> Back
             </button>
             <div>
-              <label style={{ fontSize: '0.6875rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.375rem' }}>Admin Email</label>
+              <label style={{ fontSize: '0.6875rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.375rem' }}>Email or Username</label>
               <input 
-                type="email" placeholder="admin@cafe.com"
-                value={adminEmail} onChange={e => setAdminEmail(e.target.value)}
+                type="text" placeholder="e.g. admin@cafe.com"
+                value={loginId} onChange={e => setLoginId(e.target.value)}
                 style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-m)', color: 'var(--text-0)', outline: 'none' }}
               />
             </div>
-            <button onClick={handleAdminLoginSubmit} className="btn-primary" style={{ padding: '0.75rem' }}>Verify Identity</button>
+            <button onClick={handleAdminLoginSubmit} className="btn-primary" style={{ padding: '0.75rem' }}>Continue to PIN</button>
             <button onClick={startRecovery} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', marginTop: '0.5rem' }}>Forgot PIN?</button>
           </div>
         )}
 
-        {view === 'staff-select' && (
-          <div className="animate-in">
-             <button onClick={() => setView('initial')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '1.25rem' }}>
+        {view === 'staff-login' && (
+          <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <button onClick={() => setView('initial')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '1.25rem' }}>
               <ArrowLeft size={14} /> Back
             </button>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
-              {users.filter(u => u.role !== 'admin').map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => handleStaffSelect(u)}
-                  className="card"
-                  style={{ padding: '1.25rem 0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-1)', border: '1px solid var(--border)', textAlign: 'center' }}
-                >
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-2)', color: 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ChefHat size={20} />
-                  </div>
-                  <p style={{ fontSize: '0.8125rem', fontWeight: 500, margin: 0, color: 'var(--text-0)' }}>{u.name}</p>
-                </button>
-              ))}
+            <div>
+              <label style={{ fontSize: '0.6875rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.375rem' }}>Staff Username</label>
+              <input 
+                type="text" placeholder="e.g. rakesh_waiter"
+                value={staffUsername} onChange={e => setStaffUsername(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-m)', color: 'var(--text-0)', outline: 'none' }}
+              />
             </div>
+            <button onClick={handleStaffLoginSubmit} className="btn-primary" style={{ padding: '0.75rem' }}>Continue to PIN</button>
+          </div>
+        )}
+
+        {view === 'sign-up' && (
+          <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '70dvh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <button onClick={() => setView('initial')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0.5rem 0 0.25rem' }}>Create Admin</h2>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginBottom: '0.75rem' }}>Set up your primary administrative access.</p>
+            
+            <div>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Full Name</label>
+              <input type="text" className="input" value={signupName} onChange={e => setSignupName(e.target.value)} placeholder="John Doe" />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Unique Username</label>
+              <input type="text" className="input" value={signupUsername} onChange={e => setSignupUsername(e.target.value)} placeholder="john_admin" />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Email Address</label>
+              <input type="email" className="input" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="john@company.com" />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Phone (Optional)</label>
+              <input type="tel" className="input" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="+91..." />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Create 4-Digit PIN</label>
+              <input 
+                type="password" maxLength={4} className="input" 
+                value={signupPin} onChange={e => setSignupPin(e.target.value.replace(/\D/g,''))} 
+                placeholder="****" style={{ textAlign: 'center', letterSpacing: '0.5em' }}
+              />
+            </div>
+            
+            <button onClick={handleSignUpSubmit} className="btn-primary" style={{ padding: '0.875rem', marginTop: '0.5rem' }}>
+              Complete Setup
+            </button>
           </div>
         )}
       </div>

@@ -82,6 +82,7 @@ export interface EditRecord {
 export interface User {
   id: string;
   name: string;
+  username: string;
   email: string;
   pin: string;
   role: Role;
