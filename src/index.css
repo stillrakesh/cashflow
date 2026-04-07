@@ -353,6 +353,29 @@ button:active { transform: scale(0.96); }
   box-sizing: border-box;
 }
 
+.text-center-date {
+  display: flex !important;
+  justify-content: center !important;
+  text-align: center !important;
+  align-items: center !important;
+}
+
+.text-center-date::-webkit-datetime-edit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.text-center-date::-webkit-date-and-time-value {
+  text-align: center;
+}
+
+.text-center-date::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
 .input:focus { border-color: var(--text-3); }
 .input::placeholder { color: var(--text-3); }
 
