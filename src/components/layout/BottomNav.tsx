@@ -24,18 +24,19 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingC
   ];
 
   return (
-    <nav className="bottom-nav" id="main-navigation">
+    <nav className={`bottom-nav ${!isAdmin ? 'four-tabs' : ''}`} id="main-navigation">
       {tabs.map((tab) => {
         if (tab.id === 'add') {
           return (
-            <button
-              key={tab.id}
-              className="nav-fab"
-              onClick={() => setActiveTab('add')}
-              aria-label="Add new entry"
-            >
-              <Plus size={20} strokeWidth={2.5} />
-            </button>
+            <div key={tab.id} className="nav-fab-container">
+              <button
+                className="nav-fab"
+                onClick={() => setActiveTab('add')}
+                aria-label="Add new entry"
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+            </div>
           );
         }
 

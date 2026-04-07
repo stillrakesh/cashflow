@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, Loader2 } from 'lucide-react';
 import type { Transaction, PaymentType, TransactionCategory, TransactionType } from '../../types';
 import { CATEGORY_ICONS, CATEGORY_CLASSIFICATION } from '../../types';
@@ -49,6 +49,12 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const apiKey = localStorage.getItem('cafeflow_gemini_key') || '';
+
+  // Prevent background scrolling
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
 
   const canSave = parseFloat(amount) > 0;
 
