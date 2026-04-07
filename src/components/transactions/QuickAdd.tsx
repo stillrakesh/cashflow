@@ -132,7 +132,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
                 disabled={isScanning}
                 style={{ 
                   background: 'var(--bg-2)', border: 'none', borderRadius: 'var(--radius-full)', 
-                  padding: '0.375rem 0.625rem', fontSize: '0.625rem', fontWeight: 600,
+                  padding: '0.25rem 0.5rem', fontSize: '0.625rem', fontWeight: 600,
                   display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--text-1)'
                 }}
               >
@@ -154,15 +154,16 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
           </button>
         </div>
 
-        {/* Type */}
-        <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '1.5rem' }}>
-          <button className={`chip ${type === 'sale' ? 'active' : ''}`} onClick={() => setType('sale')} style={{ flex: 1, justifyContent: 'center', padding: '0.5rem' }}>
-            sale
-          </button>
-          <button className={`chip ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')} style={{ flex: 1, justifyContent: 'center', padding: '0.5rem' }}>
-            expense
-          </button>
-        </div>
+        <div className="sheet-content">
+          {/* Type */}
+          <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '1.25rem' }}>
+            <button className={`chip ${type === 'sale' ? 'active' : ''}`} onClick={() => setType('sale')} style={{ flex: 1, justifyContent: 'center', padding: '0.5rem' }}>
+              sale
+            </button>
+            <button className={`chip ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')} style={{ flex: 1, justifyContent: 'center', padding: '0.5rem' }}>
+              expense
+            </button>
+          </div>
 
         {/* Amount */}
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
@@ -265,36 +266,40 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose }) => {
         {/* Date */}
         <div style={{ marginBottom: '1rem' }}>
           <p className="section-label">date</p>
-          <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
+          <input type="date" className="input" style={{ padding: '0.625rem 0.875rem' }} value={date} onChange={e => setDate(e.target.value)} />
         </div>
 
         {/* Notes & Account */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
           <div>
             <p className="section-label">notes</p>
-            <input type="text" className="input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="what was this for?" />
+            <input type="text" className="input" style={{ padding: '0.625rem 0.875rem' }} value={notes} onChange={e => setNotes(e.target.value)} placeholder="what was this for?" />
           </div>
           <div>
             <p className="section-label">account / person</p>
-            <input type="text" className="input" value={account} onChange={e => setAccount(e.target.value)} placeholder="e.g. hdfc, ramesh" />
+            <input type="text" className="input" style={{ padding: '0.625rem 0.875rem' }} value={account} onChange={e => setAccount(e.target.value)} placeholder="e.g. hdfc, ramesh" />
           </div>
         </div>
 
-        <div style={{ marginBottom: '1.25rem' }}>
-            <p className="section-label">vendor</p>
-            <input type="text" className="input" value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. swiggy, local shop" />
+        <div style={{ marginBottom: '1rem' }}>
+            <p className="section-label">vendor (optional)</p>
+            <input type="text" className="input" style={{ padding: '0.625rem 0.875rem' }} value={vendor} onChange={e => setVendor(e.target.value)} placeholder="e.g. swiggy, local shop" />
         </div>
+        
+        </div> {/* end sheet-content */}
 
         {/* Save */}
-        <button
-          onClick={handleSave}
-          disabled={!canSave}
-          className="btn-primary"
-          style={{ width: '100%', padding: '0.875rem', opacity: canSave ? 1 : 0.3 }}
-        >
-          {type === 'sale' ? 'save sale' : 'save expense'}
+        <div className="sheet-footer">
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="btn-primary"
+            style={{ width: '100%', padding: '0.875rem', opacity: canSave ? 1 : 0.3 }}
+          >
+            {type === 'sale' ? 'save sale' : 'save expense'}
           {amount ? ` · ₹${parseFloat(amount).toLocaleString('en-IN')}` : ''}
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   );
