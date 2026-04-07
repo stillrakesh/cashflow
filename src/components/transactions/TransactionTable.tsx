@@ -28,7 +28,7 @@ const CATEGORIES: TransactionCategory[] = [
 const PAY_TYPES: PaymentType[] = ['cash','upi','bank','other'];
 
 const TransactionList: React.FC<TransactionListProps> = ({
-  transactions, onApprove, onDelete, onEdit, role,
+  transactions, onApprove, onReject, onDelete, onEdit, role,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Transaction>>({});
@@ -263,19 +263,36 @@ const TransactionList: React.FC<TransactionListProps> = ({
                             )}
                           </div>
                           
+                          
                           <div style={{ display: 'flex', gap: '0.375rem' }}>
-                            <button onClick={() => startEdit(txn)} className="btn-outline" style={{ flex: 1, fontSize: '0.6875rem', gap: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
-                              <Edit3 size={11} /> edit
-                            </button>
-                            {isAdmin && txn.status === 'pending' && (
-                              <button onClick={() => onApprove(txn.id)} style={{ flex: 1, fontSize: '0.6875rem', background: 'var(--text-0)', color: 'var(--bg-0)', borderRadius: 'var(--radius-full)', padding: '0.5rem', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                approve
+                            {(isAdmin || txn.status === 'pending') && (
+                              <button onClick={() => startEdit(txn)} className="btn-outline" style={{ flex: 1, fontSize: '0.6875rem', gap: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+                                <Edit3 size={11} /> edit
                               </button>
                             )}
+
+                            {isAdmin && txn.status === 'pending' && (
+                              <div style={{ flex: 2, display: 'flex', gap: '0.25rem' }}>
+                                <button 
+                                  onClick={() => onApprove(txn.id)} 
+                                  style={{ flex: 1, fontSize: '0.6875rem', background: 'var(--text-0)', color: 'var(--bg-0)', borderRadius: 'var(--radius-full)', padding: '0.5rem', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  approve
+                                </button>
+                                <button 
+                                  onClick={() => onReject && onReject(txn.id)} 
+                                  style={{ flex: 1, fontSize: '0.6875rem', background: 'var(--bg-2)', color: 'var(--red)', borderRadius: 'var(--radius-full)', padding: '0.5rem', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  reject
+                                </button>
+                              </div>
+                            )}
+
                             <button onClick={e => { e.stopPropagation(); setExpandedId(null); }} className="btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
                               <ChevronUp size={14} />
                             </button>
-                            {isAdmin && (
+
+                            {(isAdmin || txn.status === 'pending') && (
                               <button onClick={() => onDelete(txn.id)} style={{ fontSize: '0.6875rem', background: 'transparent', color: 'var(--red)', padding: '0.5rem 0.625rem', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Trash2 size={13} />
                               </button>
