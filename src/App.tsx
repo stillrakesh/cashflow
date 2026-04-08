@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+// Deployment: v3.1.0 — Advanced Auth Sync
+
 import BottomNav from './components/layout/BottomNav';
 import StatCards from './components/dashboard/StatCards';
 import SalesChart from './components/dashboard/SalesChart';
