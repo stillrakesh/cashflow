@@ -2,7 +2,7 @@
 // CafeFlow v3.0 — Finance Engine
 // ============================================
 
-import type { Transaction, DashboardStats, DailyData, AIInsight, ExpenseClassification, DatePreset, TodaySnapshot, PeriodSummary } from '../types';
+import type { Transaction, DashboardStats, DailyData, AIInsight, ExpenseClassification, DatePreset, TodaySnapshot, PeriodSummary, OpeningBalances, CategoryConfig } from '../types';
 import { CATEGORY_CLASSIFICATION } from '../types';
 
 /**
@@ -46,14 +46,18 @@ export const formatINRCompact = (amount: number): string => {
 /**
  * Get expense classification for a category
  */
-export const getExpenseClassification = (category: string): ExpenseClassification => {
+export const getExpenseClassification = (category: string, customCategories?: CategoryConfig[]): ExpenseClassification => {
+  if (customCategories) {
+    const config = customCategories.find(c => c.name.toLowerCase() === category?.toLowerCase());
+    if (config) return config.classification;
+  }
   return CATEGORY_CLASSIFICATION[category?.toLowerCase()] || 'variable';
 };
 
 /**
  * Calculate comprehensive dashboard stats
  */
-export const calculateStats = (transactions: Transaction[]): DashboardStats => {
+export const calculateStats = (transactions: Transaction[], customCategories: CategoryConfig[], openingBalances?: OpeningBalances): DashboardStats => {
   const approved = transactions.filter(t => t.status === 'approved');
   const sales = approved.filter(t => t.type === 'sale');
   const expenses = approved.filter(t => t.type === 'expense');
@@ -62,16 +66,20 @@ export const calculateStats = (transactions: Transaction[]): DashboardStats => {
   const totalExpenses = expenses.reduce((acc, t) => acc + t.amount, 0);
   const netProfit = totalSales - totalExpenses;
 
+  const totalOpening = openingBalances 
+    ? (openingBalances.Cash + openingBalances.UPI + openingBalances.Bank) 
+    : 0;
+
   const fixedExpenses = expenses
-    .filter(t => getExpenseClassification(t.category) === 'fixed')
+    .filter(t => (t.classification === 'fixed' || getExpenseClassification(t.category, customCategories) === 'fixed'))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const variableExpenses = expenses
-    .filter(t => getExpenseClassification(t.category) === 'variable')
+    .filter(t => (t.classification === 'variable' || getExpenseClassification(t.category, customCategories) === 'variable'))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const oneTimeExpenses = expenses
-    .filter(t => getExpenseClassification(t.category) === 'one-time')
+    .filter(t => (t.classification === 'one-time' || getExpenseClassification(t.category, customCategories) === 'one-time'))
     .reduce((acc, t) => acc + t.amount, 0);
 
   const cogs = estimateCOGS(transactions);
@@ -87,7 +95,7 @@ export const calculateStats = (transactions: Transaction[]): DashboardStats => {
     cogs,
     cashIn: totalSales,
     cashOut: totalExpenses,
-    availableCash: netProfit,
+    availableCash: netProfit + totalOpening,
     transactionCount: transactions.length,
     fixedExpenses,
     variableExpenses,
@@ -141,7 +149,7 @@ export const getTodaySnapshot = (transactions: Transaction[]): TodaySnapshot => 
       topCategory = cat;
     }
   });
-
+ 
   return {
     sales,
     expenses: totalExpenses,
@@ -311,108 +319,112 @@ export const getRevenueByPayment = (transactions: Transaction[]) => {
 
 /**
  * Generate AI insights from transaction data
+ * Enhanced with automatic business alerts
  */
-export const generateAIInsights = (transactions: Transaction[]): AIInsight[] => {
+export const generateAIInsights = (filteredTransactions: Transaction[], allTransactions: Transaction[]): AIInsight[] => {
   const insights: AIInsight[] = [];
-  const approved = transactions.filter(t => t.status === 'approved');
+  const approved = filteredTransactions.filter(t => t.status === 'approved');
   const expenses = approved.filter(t => t.type === 'expense');
   const sales = approved.filter(t => t.type === 'sale');
 
   const totalSales = sales.reduce((a, t) => a + t.amount, 0);
   const totalExpenses = expenses.reduce((a, t) => a + t.amount, 0);
+  const currentProfit = totalSales - totalExpenses;
 
-  // 1. Revenue distribution by payment
-  const upiSales = sales.filter(t => t.paymentType === 'upi').reduce((a, t) => a + t.amount, 0);
-  const upiPercent = totalSales > 0 ? Math.round((upiSales / totalSales) * 100) : 0;
-  if (upiPercent > 50) {
+  // 1. Low Profit Warning
+  if (currentProfit < 0) {
     insights.push({
-      id: 'ai-upi',
-      type: 'summary',
-      title: 'UPI Dominance',
-      content: `UPI contributes ${upiPercent}% of your total revenue (${formatINR(upiSales)}). Digital payments are your strength.`,
-      severity: 'low',
+      id: 'insight-low-profit',
+      type: 'alert',
+      title: 'Money Alert: Loss Detected',
+      content: `You've spent ${formatINR(Math.abs(currentProfit))} more than you earned in this period. Time to check where money is going.`,
+      severity: 'high',
       timestamp: new Date().toISOString(),
-      icon: '📱',
+      icon: '🔴',
     });
   }
 
-  // 2. High expense categories
-  const breakdown = getExpenseBreakdown(transactions);
-  const topExpense = breakdown[0];
-  if (topExpense && topExpense.percentage > 30) {
+  // 2. High Expense Alert & Category Dominance
+  const breakdown = getExpenseBreakdown(filteredTransactions);
+  if (breakdown.length > 0) {
+    const top = breakdown[0];
+    
+    // Extreme dominance (> 70%)
+    if (top.percentage >= 70) {
+      insights.push({
+        id: 'insight-dominance',
+        type: 'alert',
+        title: `${top.name} is taking over!`,
+        content: `${top.name} makes up ${top.percentage}% of your total costs. This is extremely high compared to other things.`,
+        severity: 'high',
+        timestamp: new Date().toISOString(),
+        icon: '⚖️',
+      });
+    } 
+    // High expense (> 40%)
+    else if (top.percentage >= 40) {
+      insights.push({
+        id: 'insight-high-expense',
+        type: 'alert',
+        title: `High ${top.name} cost`,
+        content: `${top.name} is taking ${top.percentage}% of your budget (${formatINR(top.value)}). Can you find cheaper rates?`,
+        severity: 'medium',
+        timestamp: new Date().toISOString(),
+        icon: '⚠️',
+      });
+    }
+  }
+
+  // 3. Sudden Spike (Today vs Yesterday)
+  const todayStr = istToday();
+  const yestStr = istDaysAgo(1);
+  
+  const todayExpenses = allTransactions
+    .filter(t => t.type === 'expense' && t.status === 'approved' && new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) === todayStr)
+    .reduce((a, t) => a + t.amount, 0);
+    
+  const yestExpenses = allTransactions
+    .filter(t => t.type === 'expense' && t.status === 'approved' && new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) === yestStr)
+    .reduce((a, t) => a + t.amount, 0);
+
+  if (todayExpenses > 0 && yestExpenses > 0 && todayExpenses > (yestExpenses * 2)) {
     insights.push({
-      id: 'ai-top-expense',
+      id: 'insight-spike',
       type: 'alert',
-      title: `${topExpense.name} is ${topExpense.percentage}% of costs`,
-      content: `${topExpense.name} expenses total ${formatINR(topExpense.value)}. Consider negotiating bulk rates or finding alternate suppliers.`,
+      title: 'Sudden Spending Jump!',
+      content: `Today's expenses (${formatINR(todayExpenses)}) are more than double of what you spent yesterday (${formatINR(yestExpenses)}).`,
       severity: 'high',
       timestamp: new Date().toISOString(),
-      icon: '⚠️',
+      icon: '🚀',
     });
   }
 
-  // 3. Profit margin
-  const margin = totalSales > 0 ? Math.round(((totalSales - totalExpenses) / totalSales) * 100) : 0;
-  if (margin < 20 && totalSales > 0) {
+  // 4. Healthy Business Check (if not already alerted)
+  if (currentProfit > 0 && insights.length === 0) {
+    const margin = Math.round((currentProfit / totalSales) * 100);
     insights.push({
-      id: 'ai-margin',
-      type: 'alert',
-      title: `Low Profit Margin: ${margin}%`,
-      content: `Your expenses are ${formatINR(totalExpenses)} against revenue of ${formatINR(totalSales)}. Target a minimum 25% margin for sustainability.`,
-      severity: 'high',
-      timestamp: new Date().toISOString(),
-      icon: '📉',
-    });
-  } else if (margin >= 20) {
-    insights.push({
-      id: 'ai-margin',
+      id: 'insight-healthy',
       type: 'summary',
-      title: `Healthy Margin: ${margin}%`,
-      content: `Net profit of ${formatINR(totalSales - totalExpenses)} on ${formatINR(totalSales)} revenue. Keep controlling variable costs.`,
+      title: 'Doing Good!',
+      content: `You earned a profit of ${formatINR(currentProfit)} (${margin}% margin). Keep up the great work!`,
       severity: 'low',
       timestamp: new Date().toISOString(),
       icon: '✅',
     });
   }
 
-  // 4. COGS ratio
-  const cogs = estimateCOGS(transactions);
+  // 5. Existing COGS check
+  const cogs = estimateCOGS(filteredTransactions);
   const cogsPercent = totalSales > 0 ? Math.round((cogs / totalSales) * 100) : 0;
-  if (cogsPercent > 40) {
+  if (cogsPercent > 40 && !insights.find(i => i.id === 'insight-dominance')) {
     insights.push({
       id: 'ai-cogs',
       type: 'suggestion',
-      title: `COGS is ${cogsPercent}% of revenue`,
-      content: `Ingredient costs (${formatINR(cogs)}) are high. Review vegetable & oil purchases for better pricing.`,
+      title: `Grocery costs are high`,
+      content: `Your ingredient costs are ${cogsPercent}% of revenue. This is a bit high; try checking other shops for better prices.`,
       severity: 'medium',
       timestamp: new Date().toISOString(),
       icon: '🧾',
-    });
-  }
-
-  // 5. Fixed vs variable
-  const fixedTotal = expenses.filter(t => getExpenseClassification(t.category) === 'fixed').reduce((a, t) => a + t.amount, 0);
-  const fixedPct = totalExpenses > 0 ? Math.round((fixedTotal / totalExpenses) * 100) : 0;
-  insights.push({
-    id: 'ai-fixed-var',
-    type: 'trend',
-    title: 'Cost Structure',
-    content: `Fixed costs are ${fixedPct}% of total expenses (${formatINR(fixedTotal)}). Variable costs make up the rest at ${formatINR(totalExpenses - fixedTotal)}.`,
-    severity: 'low',
-    timestamp: new Date().toISOString(),
-    icon: '📊',
-  });
-
-  // 6. Cash flow suggestion
-  if (totalSales - totalExpenses < 0) {
-    insights.push({
-      id: 'ai-cashflow',
-      type: 'alert',
-      title: 'Negative Cash Flow',
-      content: `You're spending more than you earn. Cash deficit: ${formatINR(Math.abs(totalSales - totalExpenses))}. Immediate cost review needed.`,
-      severity: 'high',
-      timestamp: new Date().toISOString(),
-      icon: '🔴',
     });
   }
 

@@ -37,7 +37,7 @@ const DownloadStatementModal: React.FC<DownloadStatementModalProps> = ({ onClose
               <p style={{ fontSize: '0.6875rem', color: 'var(--text-3)', margin: 0 }}>Configure your report range</p>
             </div>
           </div>
-          <button onClick={onClose} className="theme-btn" style={{ width: '32px', height: '32px', borderRadius: '50%', padding: 0 }}>
+          <button onClick={onClose} className="btn-ghost" style={{ width: '48px' }}>
             <X size={16} />
           </button>
         </div>
@@ -49,13 +49,13 @@ const DownloadStatementModal: React.FC<DownloadStatementModalProps> = ({ onClose
               key={p.label}
               onClick={() => handlePreset(p.getRange)}
               style={{
-                textAlign: 'left', padding: '0.75rem', borderRadius: '0.75rem',
+                textAlign: 'left', height: '48px', padding: '0 1rem', borderRadius: '12px',
                 border: '1px solid var(--border)', background: 'var(--bg-0)',
                 fontSize: '0.75rem', fontWeight: 500, textTransform: 'capitalize',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                cursor: 'pointer'
               }}
-              className="preset-pill"
             >
               {p.label} <ChevronRight size={12} style={{ opacity: 0.3 }} />
             </button>
@@ -96,7 +96,7 @@ const DownloadStatementModal: React.FC<DownloadStatementModalProps> = ({ onClose
         <button
           onClick={() => onDownload(startDate, endDate)}
           className="btn-primary"
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem' }}
+          style={{ width: '100%', gap: '0.5rem' }}
         >
           Generate PDF Statement
         </button>

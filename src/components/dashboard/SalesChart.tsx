@@ -59,14 +59,14 @@ const SalesChart: React.FC<SalesChartProps> = ({ transactions }) => {
   const selectedData = selectedIndex !== null ? data[selectedIndex] : null;
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
+    <div style={{ marginBottom: 'var(--spacing-section)' }}>
       <p className="section-label">cash flow trend</p>
-      <div className="card animate-in" style={{ padding: '1rem', animationDelay: '150ms' }}>
+      <div className="card animate-in" style={{ padding: 'var(--spacing-card)', animationDelay: '150ms' }}>
         
         {/* Interactive Tooltip / Info Box */}
         <div style={{
           height: '64px',
-          marginBottom: '1rem',
+          marginBottom: 'var(--spacing-card)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -75,35 +75,34 @@ const SalesChart: React.FC<SalesChartProps> = ({ transactions }) => {
           borderRadius: 'var(--radius-m)',
           transition: 'all 0.2s ease',
           opacity: 1,
-          border: '1px solid var(--border)',
         }}>
           {selectedData ? (
             <>
-              <div style={{ fontSize: '0.6875rem', color: 'var(--text-3)', fontWeight: 500, marginBottom: '0.2rem' }}>
+              <div className="text-label" style={{ textTransform: 'lowercase', marginBottom: '0.2rem' }}>
                 {selectedData.fullDate.toLowerCase()}
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--green)' }}>
+                <span className="text-number" style={{ fontSize: '0.8125rem', color: 'var(--green)' }}>
                   +{formatINR(selectedData.sales)}
                 </span>
-                <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--red)' }}>
+                <span className="text-number" style={{ fontSize: '0.8125rem', color: 'var(--red)' }}>
                   -{formatINR(selectedData.expenses)}
                 </span>
                 <div style={{ width: '1px', height: '12px', background: 'var(--border)' }} />
-                <span className="mono" style={{ fontSize: '0.8125rem', color: 'var(--text-0)', fontWeight: 600 }}>
+                <span className="text-number" style={{ fontSize: '0.8125rem', color: 'var(--text-0)' }}>
                   {formatINR(selectedData.sales - selectedData.expenses)} net
                 </span>
               </div>
             </>
           ) : (
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+            <div className="text-label" style={{ textTransform: 'lowercase' }}>
               tap a bar to view insights
             </div>
           )}
         </div>
 
         {/* Chart Bars */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '140px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--spacing-sm)', height: '140px' }}>
           {data.map((d, i) => {
             const isSelected = selectedIndex === i;
             const isDimmed = selectedIndex !== null && !isSelected;
@@ -143,11 +142,10 @@ const SalesChart: React.FC<SalesChartProps> = ({ transactions }) => {
                     transition: 'height 0.4s ease',
                   }} />
                 </div>
-                <span style={{ 
-                  fontSize: '0.5625rem', 
+                <span className="text-label" style={{ 
                   color: isSelected ? 'var(--text-0)' : 'var(--text-3)',
-                  fontWeight: isSelected ? 600 : 500,
                   transition: 'color 0.2s',
+                  textTransform: 'lowercase'
                 }}>
                   {d.label.toLowerCase()}
                 </span>
@@ -156,14 +154,14 @@ const SalesChart: React.FC<SalesChartProps> = ({ transactions }) => {
           })}
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', gap: 'var(--spacing-card)', justifyContent: 'center', marginTop: 'var(--spacing-card)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--green)' }} />
-            <span style={{ fontSize: '0.625rem', color: 'var(--text-3)' }}>income</span>
+            <span className="text-label" style={{ textTransform: 'lowercase' }}>income</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <div style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--red)' }} />
-            <span style={{ fontSize: '0.625rem', color: 'var(--text-3)' }}>expenses</span>
+            <span className="text-label" style={{ textTransform: 'lowercase' }}>expenses</span>
           </div>
         </div>
       </div>

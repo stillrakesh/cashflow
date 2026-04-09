@@ -41,6 +41,18 @@
   --radius-xl: 20px;
   --radius-full: 999px;
 
+  /* Global Design System Tokens */
+  --radius-card: 16px;
+  --radius-btn: 12px;
+  --radius-modal: 20px;
+
+  --spacing-section: 16px;
+  --spacing-card: 12px;
+  --spacing-sm: 8px;
+
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.15);
+
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -62,6 +74,9 @@
 
   --border: rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.1);
+
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.6);
 
   --accent: #f5f5f5;
   --accent-soft: rgba(255,255,255,0.05);
@@ -102,46 +117,74 @@ body {
   min-height: 100dvh;
 }
 
-/* ---------- Typography ---------- */
+/* ---------- Typography System ---------- */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text-0);
   line-height: 1.2;
 }
 
-/* CRED-style section label */
-.section-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 0.5rem;
+/* 1. Titles (Bold, Large) */
+.text-title {
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
 }
 
-/* Monospaced financial numbers */
-.mono {
+/* 2. Section Headings (Medium) */
+.text-heading {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-0);
+  margin: 0;
+}
+
+/* 3. Labels (Small, Grey) */
+.text-label, .section-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.section-label {
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* 4. Numbers (Medium, Slightly Larger) */
+.text-number, .mono {
   font-family: 'DM Mono', 'SF Mono', monospace;
-  font-weight: 400;
+  font-weight: 500;
+  font-size: 1rem;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .mono-lg {
   font-family: 'DM Mono', 'SF Mono', monospace;
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
 .mono-xl {
   font-family: 'DM Mono', 'SF Mono', monospace;
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 500;
   letter-spacing: -0.04em;
 }
+
+/* Global design system utility weights */
+.text-bold { font-weight: 700 !important; }
+.text-medium { font-weight: 500 !important; }
+.text-regular { font-weight: 400 !important; }
+.text-light { font-weight: 300 !important; }
 
 /* ---------- Layout ---------- */
 .app-container {
@@ -260,10 +303,20 @@ h1, h2, h3, h4, h5, h6 {
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-l);
-  padding: 1.125rem;
+  border-radius: var(--radius-card);
+  padding: var(--spacing-card);
+  box-shadow: var(--shadow-card);
   transition: transform 120ms ease;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Standard Secondary Card */
+.card-secondary {
+  background: var(--bg-1);
+  border: none;
+  border-radius: var(--radius-card);
+  padding: var(--spacing-card);
+  box-shadow: none;
 }
 
 .card:active {
@@ -289,37 +342,79 @@ button:active { transform: scale(0.96); }
 .btn-primary {
   background: var(--text-0);
   color: var(--bg-0);
-  padding: 0.875rem 1.5rem;
-  border-radius: var(--radius-full);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-m);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-ghost {
-  background: transparent;
-  color: var(--text-2);
-  padding: 0.5rem 0.75rem;
+.btn-secondary {
+  background: var(--bg-2);
+  color: var(--text-0);
+  height: 40px;
+  padding: 0 12px;
   border-radius: var(--radius-m);
+  border: none;
   font-size: 0.8125rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-outline {
   background: transparent;
   color: var(--text-1);
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-full);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-m);
   border: 1px solid var(--border-strong);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #ffffff;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-m);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-m);
+  font-size: 0.8125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ---------- Chips (CRED pill style) ---------- */
 .chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.375rem;
-  padding: 0.4rem 0.75rem;
+  height: 32px;
+  padding: 0 0.875rem;
   border-radius: var(--radius-full);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -340,17 +435,19 @@ button:active { transform: scale(0.96); }
 /* ---------- Inputs ---------- */
 .input {
   width: 100%;
-  height: 48px;
+  height: 40px;
   padding: 0 1rem;
   background: var(--bg-2);
   border: 1px solid transparent;
   border-radius: var(--radius-m);
   color: var(--text-0);
   font-family: inherit;
-  font-size: 16px !important; /* MUST BE 16px to prevent iOS Safari auto-zoom on focus */
+  font-size: 16px !important; 
   outline: none;
   transition: border-color 150ms;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 .text-center-date {
@@ -533,9 +630,9 @@ select.input {
 
 /* ---------- Theme Toggle (CRED minimal) ---------- */
 .theme-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   display: flex;
@@ -593,12 +690,113 @@ select.input {
   width: 100%;
   max-width: 400px;
   background: var(--bg-0);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  border: none;
+  border-radius: var(--radius-modal);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
 
 [data-theme="dark"] .modal-content {
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+/* ---------- Category Grid ---------- */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid transparent;
+  color: var(--text-1);
+  transition: all 0.2s ease;
+}
+
+.category-item span:first-child {
+  font-size: 1.25rem;
+}
+
+.category-item span:last-child {
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-item.selected {
+  background: var(--text-0);
+  color: var(--bg-0);
+}
+
+.category-item.custom-trigger {
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--text-2);
+}
+
+/* ---------- Category Groups (Collapsible) ---------- */
+.category-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-group {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.category-group-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.category-group-header:active {
+  background: var(--bg-2);
+}
+
+.category-group-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.category-group-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.category-group .category-grid {
+  padding: 0 12px 12px 12px;
+  border-top: 1px solid transparent;
+}
+
+.category-group.expanded .category-grid {
+  border-top-color: var(--border);
+  padding-top: 12px;
 }

@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import {
-  CheckCircle2,
-  XCircle,
-  Clock,
   Trash2,
   Edit3,
   ChevronUp,
@@ -14,10 +11,12 @@ import { formatINR } from '../../utils/financeUtils';
 interface TransactionListProps {
   transactions: Transaction[];
   onApprove: (id: string) => void;
-  onReject?: (id: string) => void;
+  onReject?: (id: string, comment?: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, updates: Partial<Transaction>) => void;
   role: string;
+  isDateLocked: (date: string) => boolean;
+  onAddClick?: () => void;
 }
 
 const CATEGORIES: TransactionCategory[] = [
@@ -28,7 +27,7 @@ const CATEGORIES: TransactionCategory[] = [
 const PAY_TYPES: PaymentType[] = ['cash','upi','bank','other'];
 
 const TransactionList: React.FC<TransactionListProps> = ({
-  transactions, onApprove, onReject, onDelete, onEdit, role,
+  transactions, onApprove, onReject, onDelete, onEdit, role, isDateLocked, onAddClick
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Transaction>>({});
@@ -110,6 +109,20 @@ const TransactionList: React.FC<TransactionListProps> = ({
       return { label, txns };
     });
 
+  if (transactions.length === 0) {
+    return (
+      <div className="card animate-in" style={{ padding: '3rem 1.5rem', textAlign: 'center', marginTop: '1rem' }}>
+        <p className="text-bold" style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>No transactions yet</p>
+        <p className="text-light" style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '1.5rem' }}>Your entries will appear here.</p>
+        {onAddClick && (
+          <button className="btn-primary" onClick={onAddClick}>
+            + Add first entry
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {grouped.map(({ label, txns }) => (
@@ -124,199 +137,188 @@ const TransactionList: React.FC<TransactionListProps> = ({
               
               // Status formatting
               let statusColor = 'var(--text-3)';
-              let StatusIcon = CheckCircle2;
-              if (txn.status === 'approved') {
+              const isLocked = isDateLocked(txn.date);
+              if (isLocked) {
+                statusColor = 'var(--text-3)';
+              } else if (txn.status === 'approved') {
                 statusColor = 'var(--green)';
-                StatusIcon = CheckCircle2;
               } else if (txn.status === 'pending') {
                 statusColor = 'var(--yellow)';
-                StatusIcon = Clock;
               } else if (txn.status === 'rejected') {
                 statusColor = 'var(--red)';
-                StatusIcon = XCircle;
               }
 
               return (
                 <div key={txn.id} className="animate-in" style={{ animationDelay: `${i * 20}ms`, opacity: 0 }}>
-                  {/* Row */}
+                   {/* Row */}
                   <div
                     onClick={() => !isEditing && setExpandedId(isExpanded ? null : txn.id)}
                     style={{
-                      display: 'flex', gap: '0.875rem', padding: '1rem 0',
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0',
                       borderBottom: (!isExpanded && i < txns.length - 1) ? '1px solid var(--border)' : 'none',
                       cursor: 'pointer',
                       borderTop: isExpanded ? '1px solid var(--border)' : 'none',
                     }}
                   >
+                    {/* Left: Icon */}
                     <div style={{
-                      width: '40px', height: '40px', borderRadius: '50%',
-                      border: '1px solid var(--border-strong)',
+                      width: '40px', height: '40px', borderRadius: 'var(--radius-m)',
+                      border: '1px solid var(--border)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'var(--bg-0)', fontSize: '1.25rem', flexShrink: 0
+                      background: 'var(--bg-2)', fontSize: '1.25rem', flexShrink: 0
                     }}>
                       {icon}
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-0)', textTransform: 'capitalize' }}>
-                          {txn.vendor || (txn.type === 'sale' ? 'Sale' : txn.category)} {txn.subCategory ? `— ${txn.subCategory}` : ''}
-                        </span>
-                        <span className="mono" style={{
-                          fontSize: '0.9375rem', fontWeight: 500,
-                          color: txn.type === 'sale' ? 'var(--green)' : 'var(--text-0)',
-                        }}>
-                          {txn.type === 'sale' ? '+' : ''}{formatINR(txn.amount)}
-                        </span>
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
-                        <StatusIcon size={12} color={statusColor} strokeWidth={2.5} />
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-3)' }}>
-                          {formatItemDate(txn.date)}
-                        </span>
-                      </div>
+                    {/* Middle: Title + Date */}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span className="text-heading" style={{ textTransform: 'capitalize', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {txn.vendor || (txn.type === 'sale' ? 'Sale' : txn.category)}
+                      </span>
+                      <span className="text-label" style={{ fontWeight: 400, textTransform: 'lowercase', fontSize: '0.6875rem' }}>
+                        {formatItemDate(txn.date)}
+                      </span>
+                    </div>
 
-                      {/* Optional Context Pills beneath */}
-                      {txn.status === 'pending' && !isExpanded && (
-                        <div style={{
-                          display: 'inline-flex', background: 'var(--yellow-soft)', color: 'var(--yellow)',
-                          padding: '0.25rem 0.625rem', borderRadius: '2px', fontSize: '0.5625rem',
-                          fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase'
-                        }}>
-                          waiting for approval
-                        </div>
-                      )}
-                      {txn.status === 'rejected' && !isExpanded && (
-                        <div style={{
-                          display: 'inline-flex', background: 'var(--red-soft)', color: 'var(--red)',
-                          padding: '0.25rem 0.625rem', borderRadius: '2px', fontSize: '0.5625rem',
-                          fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase'
-                        }}>
-                          entry rejected
-                        </div>
-                      )}
+                    {/* Right: Amount */}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <span className="text-number" style={{
+                        fontSize: '0.9375rem',
+                        color: txn.type === 'sale' ? 'var(--green)' : 'var(--text-0)',
+                      }}>
+                        {txn.type === 'sale' ? '+' : ''}{formatINR(txn.amount)}
+                      </span>
                     </div>
                   </div>
 
                   {/* Expanded */}
                   {isExpanded && (
                     <div style={{
-                      padding: '0 0 1.25rem 3.5rem',
+                      padding: '0 0 12px 52px',
                       borderBottom: '1px solid var(--border)',
                     }}>
                       {isEditing ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>amount</label>
-                              <input type="number" className="input" value={editValues.amount || ''} onChange={e => setEditValues(v => ({...v, amount: parseFloat(e.target.value) || 0}))} style={{ padding: '0.625rem', fontSize: '0.8125rem' }} />
+                              <label className="text-label">amount</label>
+                              <input type="number" className="input" value={editValues.amount || ''} onChange={e => setEditValues(v => ({...v, amount: parseFloat(e.target.value) || 0}))} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>date</label>
-                              <input type="date" className="input" value={editValues.date || ''} onChange={e => setEditValues(v => ({...v, date: e.target.value}))} style={{ padding: '0.625rem', fontSize: '0.8125rem' }} />
+                              <label className="text-label">date</label>
+                              <input type="date" className="input" value={editValues.date || ''} onChange={e => setEditValues(v => ({...v, date: e.target.value}))} />
                             </div>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>category</label>
-                              <select className="input" value={editValues.category || ''} onChange={e => setEditValues(v => ({...v, category: e.target.value}))} style={{ padding: '0.625rem', fontSize: '0.8125rem' }}>
+                              <label className="text-label">category</label>
+                              <select className="input" value={editValues.category || ''} onChange={e => setEditValues(v => ({...v, category: e.target.value}))}>
                                 <option value="sale">Sale</option>
                                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                               </select>
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>payment</label>
-                              <select className="input" value={editValues.paymentType || ''} onChange={e => setEditValues(v => ({...v, paymentType: e.target.value as PaymentType}))} style={{ padding: '0.625rem', fontSize: '0.8125rem' }}>
+                              <label className="text-label">payment</label>
+                              <select className="input" value={editValues.paymentType || ''} onChange={e => setEditValues(v => ({...v, paymentType: e.target.value as PaymentType}))}>
                                 {PAY_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             </div>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>vendor / source</label>
-                              <input type="text" className="input" value={editValues.vendor || ''} onChange={e => setEditValues(v => ({...v, vendor: e.target.value}))} style={{ padding: '0.625rem', fontSize: '0.8125rem' }} />
+                              <label className="text-label">vendor / source</label>
+                              <input type="text" className="input" value={editValues.vendor || ''} onChange={e => setEditValues(v => ({...v, vendor: e.target.value}))} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '0.25rem' }}>notes & account</label>
-                              <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                <input type="text" className="input" value={editValues.notes || ''} onChange={e => setEditValues(v => ({...v, notes: e.target.value}))} style={{ padding: '0.625rem', fontSize: '0.8125rem', flex: 1 }} placeholder="notes" />
-                                <input type="text" className="input" value={editValues.account || ''} onChange={e => setEditValues(v => ({...v, account: e.target.value}))} style={{ padding: '0.625rem', fontSize: '0.8125rem', flex: 1 }} placeholder="account" />
+                              <label className="text-label">notes & account</label>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <input type="text" className="input" value={editValues.notes || ''} onChange={e => setEditValues(v => ({...v, notes: e.target.value}))} placeholder="notes" />
+                                <input type="text" className="input" value={editValues.account || ''} onChange={e => setEditValues(v => ({...v, account: e.target.value}))} placeholder="account" />
                               </div>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                            <button onClick={() => saveEdit(txn.id)} className="btn-primary" style={{ flex: 1, padding: '0.625rem', fontSize: '0.75rem' }}>
-                              save
-                            </button>
-                            <button onClick={cancelEdit} className="btn-outline" style={{ flex: 1, padding: '0.625rem', fontSize: '0.75rem' }}>
-                              cancel
-                            </button>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button onClick={() => saveEdit(txn.id)} className="btn-primary" style={{ flex: 1, height: '36px' }}>save</button>
+                            <button onClick={cancelEdit} className="btn-secondary" style={{ flex: 1, height: '36px' }}>cancel</button>
                           </div>
                         </div>
                       ) : (
                         <div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.875rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                             <div>
-                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', margin: '0 0 0.125rem' }}>status</p>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 500, color: statusColor, margin: 0, textTransform: 'capitalize' }}>{txn.status}</p>
+                              <p className="text-label" style={{ marginBottom: '2px' }}>status</p>
+                              <p className="text-heading" style={{ color: statusColor, fontSize: '0.8125rem' }}>{txn.status}</p>
                             </div>
                             <div>
-                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', margin: '0 0 0.125rem' }}>payment via</p>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0, textTransform: 'uppercase' }}>{txn.paymentType}</p>
+                              <p className="text-label" style={{ marginBottom: '2px' }}>payment</p>
+                              <p className="text-heading" style={{ fontSize: '0.8125rem', textTransform: 'uppercase' }}>{txn.paymentType}</p>
                             </div>
                             <div>
-                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', margin: '0 0 0.125rem' }}>recorded by</p>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0 }}>{txn.userName.split(' ')[0]}</p>
+                              <p className="text-label" style={{ marginBottom: '2px' }}>account</p>
+                              <p className="text-heading" style={{ fontSize: '0.8125rem' }}>{txn.account || '—'}</p>
                             </div>
-                            {txn.notes && (
-                              <div>
-                                <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', margin: '0 0 0.125rem' }}>notes</p>
-                                <p style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0 }}>{txn.notes}</p>
-                              </div>
-                            )}
-                            {txn.account && (
-                              <div>
-                                <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', margin: '0 0 0.125rem' }}>account</p>
-                                <p style={{ fontSize: '0.75rem', fontWeight: 500, margin: 0 }}>{txn.account}</p>
-                              </div>
-                            )}
+                            <div>
+                              <p className="text-label" style={{ marginBottom: '2px' }}>recorded by</p>
+                              <p className="text-heading" style={{ fontSize: '0.8125rem' }}>{txn.userName.split(' ')[0]}</p>
+                            </div>
                           </div>
                           
+                          {txn.notes && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <p className="text-label" style={{ marginBottom: '2px' }}>notes</p>
+                              <p className="text-regular" style={{ fontSize: '0.8125rem' }}>{txn.notes}</p>
+                            </div>
+                          )}
+
+                          {txn.status === 'rejected' && txn.adminComment && (
+                            <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--red-soft)', borderRadius: 'var(--radius-m)', border: '1px solid var(--red)' }}>
+                              <p className="text-label" style={{ color: 'var(--red)', marginBottom: '2px', fontWeight: 600 }}>rejection reason</p>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-1)', margin: 0, fontStyle: 'italic' }}>"{txn.adminComment}"</p>
+                            </div>
+                          )}
                           
-                          <div style={{ display: 'flex', gap: '0.375rem' }}>
-                            {(isAdmin || txn.status === 'pending') && (
-                              <button onClick={() => startEdit(txn)} className="btn-outline" style={{ flex: 1, fontSize: '0.6875rem', gap: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
-                                <Edit3 size={11} /> edit
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {(isAdmin || (!isLocked && txn.status === 'pending')) && (
+                              <button 
+                                onClick={() => startEdit(txn)} 
+                                className="btn-outline" 
+                                style={{ 
+                                  height: '32px', padding: '0 10px', fontSize: '0.75rem', gap: '4px',
+                                  opacity: (isLocked && !isAdmin) ? 0.5 : 1,
+                                  cursor: (isLocked && !isAdmin) ? 'not-allowed' : 'pointer'
+                                }}
+                                disabled={isLocked && !isAdmin}
+                              >
+                                <Edit3 size={12} /> edit
                               </button>
                             )}
 
                             {isAdmin && txn.status === 'pending' && (
-                              <div style={{ flex: 2, display: 'flex', gap: '0.25rem' }}>
-                                <button 
-                                  onClick={() => onApprove(txn.id)} 
-                                  style={{ flex: 1, fontSize: '0.6875rem', background: 'var(--text-0)', color: 'var(--bg-0)', borderRadius: 'var(--radius-full)', padding: '0.5rem', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  approve
-                                </button>
-                                <button 
-                                  onClick={() => onReject && onReject(txn.id)} 
-                                  style={{ flex: 1, fontSize: '0.6875rem', background: 'var(--bg-2)', color: 'var(--red)', borderRadius: 'var(--radius-full)', padding: '0.5rem', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  reject
-                                </button>
-                              </div>
+                              <>
+                                <button onClick={() => onApprove(txn.id)} className="btn-primary" style={{ height: '32px', padding: '0 10px', fontSize: '0.75rem' }}>approve</button>
+                                <button onClick={() => onReject && onReject(txn.id)} className="btn-outline" style={{ height: '32px', padding: '0 10px', fontSize: '0.75rem', color: 'var(--red)', borderColor: 'var(--red)' }}>reject</button>
+                              </>
                             )}
 
-                            <button onClick={e => { e.stopPropagation(); setExpandedId(null); }} className="btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
-                              <ChevronUp size={14} />
-                            </button>
-
-                            {(isAdmin || txn.status === 'pending') && (
-                              <button onClick={() => onDelete(txn.id)} style={{ fontSize: '0.6875rem', background: 'transparent', color: 'var(--red)', padding: '0.5rem 0.625rem', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Trash2 size={13} />
+                             {(isAdmin || (!isLocked && txn.status === 'pending')) && (
+                              <button 
+                                onClick={() => onDelete(txn.id)} 
+                                className="btn-ghost"
+                                style={{ 
+                                  width: '32px', height: '32px', padding: 0, color: 'var(--red)', 
+                                  opacity: (isLocked && !isAdmin) ? 0.5 : 1,
+                                  cursor: (isLocked && !isAdmin) ? 'not-allowed' : 'pointer',
+                                  marginLeft: 'auto'
+                                }}
+                                disabled={isLocked && !isAdmin}
+                              >
+                                <Trash2 size={14} />
                               </button>
                             )}
+                            
+                            <button onClick={e => { e.stopPropagation(); setExpandedId(null); }} className="btn-ghost" style={{ width: '32px', height: '32px', padding: 0, color: 'var(--text-3)' }}>
+                              <ChevronUp size={16} />
+                            </button>
                           </div>
                         </div>
                       )}

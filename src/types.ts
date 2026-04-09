@@ -1,5 +1,5 @@
 // ============================================
-// CafeFlow v3.0 — Type System
+// CafeFlow v4.0 — Multi-Tenant Type System
 // ============================================
 
 export type Role = 'admin' | 'user';
@@ -9,65 +9,126 @@ export type PaymentType = 'cash' | 'upi' | 'bank' | 'other';
 export type ExpenseClassification = 'fixed' | 'variable' | 'one-time';
 export type ThemeMode = 'light' | 'dark';
 export type DatePreset = 'today' | 'yesterday' | 'this_week' | 'this_month' | 'this_year' | 'last_month' | 'last_7' | 'last_30' | 'custom' | 'all';
+export type BusinessType = 'restaurant' | 'cafe' | 'retail' | 'services' | 'other';
+export type PlanTier = 'free' | 'pro' | 'enterprise';
+export type RecurrenceFrequency = 'monthly' | 'weekly';
 
-export type TransactionCategory =
-  | 'vegetables'
-  | 'oil'
-  | 'gas'
-  | 'packaging'
-  | 'rent'
-  | 'utilities'
-  | 'salary'
-  | 'marketing'
-  | 'dairy'
-  | 'meat'
-  | 'spices'
-  | 'beverages'
-  | 'cleaning'
-  | 'equipment'
-  | 'repairs'
-  | 'transport'
-  | 'misc';
+export type OpeningBalances = Record<string, number>;
+
+// ============================================
+// Organization (Tenant)
+// ============================================
+export interface Organization {
+  id: string;
+  name: string;           // Business display name (e.g. "Rakesh's Kitchen")
+  businessType: BusinessType;
+  currency: string;       // e.g. 'INR'
+  plan: PlanTier;
+  createdAt: string;      // ISO string
+  createdBy: string;      // Admin userId who created the org
+}
+
+// ============================================
+// Shift Logging & Cash Reconciliation
+// ============================================
+export interface Shift {
+  id: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  status: 'open' | 'closed';
+  startTime: string; // ISO String
+  endTime?: string;
+  startingCash: number;
+  expectedEndingCash?: number;
+  actualEndingCash?: number;
+  discrepancy?: number;
+}
+
+export type TransactionCategory = string;
+
+export interface CategoryConfig {
+  id: string;
+  name: string;
+  classification: ExpenseClassification;
+  icon?: string;
+}
+
+export interface OrganizationSettings {
+  geminiApiKey: string;
+  openingBalances: OpeningBalances;
+  categories: CategoryConfig[];
+  features?: {
+    enableShifts?: boolean;
+  };
+}
 
 // Maps each category to its classification
 export const CATEGORY_CLASSIFICATION: Record<string, ExpenseClassification> = {
-  rent: 'fixed',
-  salary: 'fixed',
-  utilities: 'fixed',
-  marketing: 'fixed',
+  // Variable / COGS
   vegetables: 'variable',
   oil: 'variable',
-  gas: 'variable',
-  packaging: 'variable',
   dairy: 'variable',
   meat: 'variable',
   spices: 'variable',
   beverages: 'variable',
+  gas: 'variable',
+  packaging: 'variable',
   cleaning: 'variable',
   transport: 'variable',
+  wastage: 'variable',
+  commissions: 'variable',
+  misc: 'variable',
+  // Fixed / Overhead
+  rent: 'fixed',
+  utilities: 'fixed',
+  salary: 'fixed',
+  marketing: 'fixed',
+  insurance: 'fixed',
+  licenses: 'fixed',
+  laundry: 'fixed',
+  'pest control': 'fixed',
+  'loan / EMI': 'fixed',
+  taxes: 'fixed',
+  // One-Time / CapEx
   equipment: 'one-time',
   repairs: 'one-time',
-  misc: 'variable',
+  furniture: 'one-time',
+  renovation: 'one-time',
 };
 
 // Icons mapping for categories
 export const CATEGORY_ICONS: Record<string, string> = {
+  // Variable / COGS
   vegetables: '🥬',
   oil: '🫒',
-  gas: '⛽',
-  packaging: '📦',
-  rent: '🏠',
-  utilities: '💡',
-  salary: '👥',
-  marketing: '📣',
   dairy: '🥛',
   meat: '🍖',
   spices: '🌶️',
   beverages: '☕',
+  gas: '⛽',
+  packaging: '📦',
   cleaning: '🧹',
+  transport: '🚛',
+  wastage: '🗑️',
+  commissions: '💸',
+  // Fixed / Overhead
+  rent: '🏠',
+  utilities: '💡',
+  salary: '👥',
+  marketing: '📣',
+  insurance: '🛡️',
+  licenses: '📋',
+  laundry: '👔',
+  'pest control': '🪲',
+  'loan / EMI': '🏦',
+  taxes: '🧾',
+  // One-Time / CapEx
   equipment: '🔧',
   repairs: '🛠️',
-  transport: '🚛',
+  furniture: '🪑',
+  renovation: '🎨',
+  // Other
   misc: '📝',
   sale: '💰',
 };
@@ -81,6 +142,7 @@ export interface EditRecord {
 
 export interface User {
   id: string;
+  orgId: string;          // Organization this user belongs to
   name: string;
   username: string;
   email: string;
@@ -88,10 +150,12 @@ export interface User {
   role: Role;
   phone?: string;
   recoveryEmail?: string;
+  joinedAt?: string;      // ISO string
 }
 
 export interface Transaction {
   id: string;
+  orgId: string;          // Organization this txn belongs to
   type: TransactionType;
   amount: number;
   date: string; // ISO string
@@ -109,6 +173,7 @@ export interface Transaction {
   updatedAt?: string;
   vendor?: string; // Who you paid
   account?: string; // External account tracking (e.g. Swiggy, Rakesh HDFC)
+  adminComment?: string;
 }
 
 export interface DashboardStats {
@@ -164,6 +229,16 @@ export interface AIInsight {
   icon?: string;
 }
 
+export interface Vendor {
+  id: string;
+  orgId: string;
+  name: string;
+  contact?: string;
+  email?: string;
+  category?: string;
+  createdAt: string;
+}
+
 export interface FilterState {
   dateFrom: string;
   dateTo: string;
@@ -173,6 +248,7 @@ export interface FilterState {
   classifications: ExpenseClassification[];
   statuses: TransactionStatus[];
   accounts: string[];
+  vendors: string[];
   searchQuery: string;
   datePreset: DatePreset;
 }
@@ -183,4 +259,36 @@ export interface VersionInfo {
   changelog: string[];
 }
 
-export const VERSION_CONSISTENCY = '3.0.0';
+export interface DailyReport {
+  id: string; // date string YYYY-MM-DD
+  orgId: string;
+  date: string;
+  sales: number;
+  expenses: number;
+  profit: number;
+  expectedCash: number;
+  actualCash: number;
+  discrepancy: number;
+  status: 'closed';
+  closedBy: string;
+  closedAt: string;
+  notes?: string;
+}
+
+export interface RecurringExpense {
+  id: string;
+  orgId: string;
+  name: string;
+  amount: number;
+  category: string;
+  frequency: RecurrenceFrequency;
+  dayOfMonth?: number; // 1-31
+  dayOfWeek?: number;  // 0-6 (Sun-Sat)
+  lastCreatedDate?: string; // YYYY-MM-DD
+  status: 'active' | 'paused';
+  notes?: string;
+  classification: ExpenseClassification;
+  createdAt: string;
+}
+
+export const VERSION_CONSISTENCY = '4.0.0';

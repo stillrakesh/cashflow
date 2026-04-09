@@ -40,9 +40,9 @@ const ClearDataModal: React.FC<ClearDataModalProps> = ({ onClear, onClose }) => 
         <div style={{ padding: '1.5rem' }}>
            <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '1.5rem' }}>Select the cleanup scope. This action is permanent.</p>
            
-           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.5rem', background: 'var(--bg-2)', padding: '0.25rem', borderRadius: 'var(--radius-m)' }}>
-              <button onClick={() => setMode('range')} style={{ padding: '0.5rem', fontSize: '0.75rem', fontWeight: 500, borderRadius: 'var(--radius-s)', border: 'none', background: mode === 'range' ? 'var(--bg-1)' : 'transparent', color: mode === 'range' ? 'var(--text-0)' : 'var(--text-3)' }}>Date Range</button>
-              <button onClick={() => setMode('all')} style={{ padding: '0.5rem', fontSize: '0.75rem', fontWeight: 500, borderRadius: 'var(--radius-s)', border: 'none', background: mode === 'all' ? 'var(--bg-1)' : 'transparent', color: mode === 'all' ? 'var(--text-0)' : 'var(--text-3)' }}>All History</button>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.5rem', background: 'var(--bg-2)', padding: '0.25rem', borderRadius: '12px' }}>
+              <button onClick={() => setMode('range')} style={{ height: '40px', fontSize: '0.75rem', fontWeight: 500, borderRadius: '10px', border: 'none', background: mode === 'range' ? 'var(--bg-1)' : 'transparent', color: mode === 'range' ? 'var(--text-0)' : 'var(--text-3)', cursor: 'pointer' }}>Date Range</button>
+              <button onClick={() => setMode('all')} style={{ height: '40px', fontSize: '0.75rem', fontWeight: 500, borderRadius: '10px', border: 'none', background: mode === 'all' ? 'var(--bg-1)' : 'transparent', color: mode === 'all' ? 'var(--text-0)' : 'var(--text-3)', cursor: 'pointer' }}>All History</button>
            </div>
 
            {mode === 'range' && (
@@ -77,8 +77,8 @@ const ClearDataModal: React.FC<ClearDataModalProps> = ({ onClear, onClose }) => 
 
            <button 
              onClick={handleExecute}
-             className="btn-primary" 
-             style={{ width: '100%', background: 'var(--red)', color: 'white', padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+             className="btn-danger" 
+             style={{ width: '100%', gap: '0.5rem' }}
            >
              <Trash2 size={16} /> Execute Data Purge
            </button>

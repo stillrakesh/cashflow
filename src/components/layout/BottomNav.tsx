@@ -3,28 +3,27 @@ import {
   LayoutDashboard,
   BarChart3,
   Plus,
-  MessageCircle,
   Receipt,
+  Menu,
 } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   pendingCount: number;
-  isAdmin: boolean;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingCount, isAdmin }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingCount }) => {
   const tabs = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'home' },
     { id: 'transactions', icon: Receipt, label: 'logs' },
     { id: 'add', icon: Plus, label: '' },
-    ...(isAdmin ? [{ id: 'analytics', icon: BarChart3, label: 'analytics' }] : []),
-    ...(isAdmin ? [{ id: 'chat', icon: MessageCircle, label: 'ai chat' }] : []),
+    { id: 'analytics', icon: BarChart3, label: 'analytics' },
+    { id: 'more', icon: Menu, label: 'more' },
   ];
 
   return (
-    <nav className={`bottom-nav ${!isAdmin ? 'four-tabs' : ''}`} id="main-navigation">
+    <nav className="bottom-nav" id="main-navigation">
       {tabs.map((tab) => {
         if (tab.id === 'add') {
           return (
@@ -40,7 +39,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingC
           );
         }
 
-        const isActive = activeTab === tab.id;
+        const isMoreActive = tab.id === 'more' && ['more', 'accounts', 'vendors', 'settings', 'chat'].includes(activeTab);
+        const isActive = activeTab === tab.id || isMoreActive;
         return (
           <button
             key={tab.id}

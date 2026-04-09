@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Trash2 } from 'lucide-react';
-import { formatINR, answerFinanceQuestion } from '../../utils/financeUtils';
+import { formatINR, answerFinanceQuestion, parseAIText } from '../../utils/financeUtils';
 import { parseWithGemini, type GeminiParsedTransaction } from '../../utils/geminiUtils';
 import type { Transaction } from '../../types';
 
@@ -88,7 +88,19 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
     }
 
     if (!apiKey) {
-      setMessages(p => [...p, { id: (Date.now()+1).toString(), sender: 'ai', timestamp: new Date(), text: 'API key is missing! Please configure your Gemini API Key in the Settings panel below to enable AI parsing.' }]);
+      const localParsed = parseAIText(text);
+      if (localParsed && localParsed.amount > 0) {
+        setMessages(p => [...p, {
+          id: Date.now().toString(), sender: 'ai', timestamp: new Date(),
+          text: `I understood this transaction locally. Approve it?\n\n(Tip: Add a Gemini API key in Settings for much smarter AI parsing.)`,
+          pendingTransactions: [localParsed as any],
+        }]);
+      } else {
+        setMessages(p => [...p, { 
+          id: Date.now().toString(), sender: 'ai', timestamp: new Date(), 
+          text: "I couldn't understand that in offline mode.\n\nTry simple formats like 'sales cash 500', or ask basic questions like 'total profit'.\n\nFor advanced conversational parsing, add a Gemini API key in Settings!" 
+        }]);
+      }
       return;
     }
 
@@ -145,22 +157,22 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 140px)' }}>
       {/* Header */}
-      <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: 'var(--spacing-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '1rem', fontWeight: 500, margin: 0 }}>finance ai</h2>
-          <p style={{ fontSize: '0.6875rem', color: apiKey ? 'var(--green)' : 'var(--yellow)', margin: '0.125rem 0 0' }}>
+          <h2 className="text-medium" style={{ fontSize: '1rem', margin: 0 }}>finance ai</h2>
+          <p className="text-light" style={{ fontSize: '0.6875rem', color: apiKey ? 'var(--green)' : 'var(--yellow)', margin: '0.125rem 0 0' }}>
             {apiKey ? '● gemini online' : '◌ local mode'}
           </p>
         </div>
-        <button onClick={clearHistory} style={{ background: 'transparent', border: 'none', color: 'var(--text-3)' }} aria-label="Clear chat">
+        <button onClick={clearHistory} className="btn-ghost" style={{ width: '48px' }} aria-label="Clear chat">
           <Trash2 size={16} />
         </button>
       </div>
 
       {/* Quick chips */}
-      <div className="scroll-x" style={{ marginBottom: '0.75rem', gap: '0.375rem' }}>
+      <div className="scroll-x" style={{ marginBottom: 'var(--spacing-sm)', gap: 'var(--spacing-sm)' }}>
         {CHIPS.map(c => (
-          <button key={c} className="chip" onClick={() => process(c)} style={{ fontSize: '0.625rem' }}>
+          <button key={c} className="chip" onClick={() => process(c)} style={{ fontSize: '0.625rem', borderRadius: '12px' }}>
             <Sparkles size={8} /> {c}
           </button>
         ))}
@@ -183,25 +195,23 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
             }}>
               {m.text}
               {m.pendingTransactions && (
-                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ background: 'var(--bg-0)', padding: '0.5rem', borderRadius: 'var(--radius-s)' }}>
+                <div style={{ marginTop: 'var(--spacing-sm)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+                  <div style={{ background: 'var(--bg-0)', padding: 'var(--spacing-sm)', borderRadius: 'var(--radius-m)' }}>
                     {m.pendingTransactions.map((t, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', borderBottom: i < m.pendingTransactions!.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-1)' }}>{t.type} • {t.category} ({t.paymentType})</span>
-                        <span className="mono" style={{ fontSize: '0.75rem', fontWeight: 500, color: t.type === 'sale' ? 'var(--green)' : 'var(--red)' }}>
+                        <span className="text-regular" style={{ fontSize: '0.6875rem', color: 'var(--text-1)' }}>{t.type} • {t.category} ({t.paymentType})</span>
+                        <span className="mono text-medium" style={{ fontSize: '0.75rem', color: t.type === 'sale' ? 'var(--green)' : 'var(--red)' }}>
                            {formatINR(t.amount)}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button onClick={() => confirmAll(m.id, m.pendingTransactions!)} style={{
-                      flex: 1, padding: '0.5rem', background: 'var(--green-soft)', color: 'var(--green)',
-                      borderRadius: 'var(--radius-full)', fontSize: '0.6875rem', fontWeight: 600, border: 'none',
+                  <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                    <button onClick={() => confirmAll(m.id, m.pendingTransactions!)} className="btn-primary" style={{
+                      flex: 1, fontSize: '0.6875rem'
                     }}>approve all</button>
-                    <button onClick={() => reject(m.id)} style={{
-                      flex: 1, padding: '0.5rem', background: 'var(--red-soft)', color: 'var(--red)',
-                      borderRadius: 'var(--radius-full)', fontSize: '0.6875rem', fontWeight: 600, border: 'none',
+                    <button onClick={() => reject(m.id)} className="btn-secondary" style={{
+                      flex: 1, fontSize: '0.6875rem'
                     }}>cancel</button>
                   </div>
                 </div>
@@ -221,21 +231,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ onAddTransaction, currentUser: _c
       </div>
 
       {/* Input */}
-      <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', marginTop: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: 'var(--spacing-sm)', paddingTop: 'var(--spacing-sm)', borderTop: '1px solid var(--border)', marginTop: 'var(--spacing-sm)' }}>
         <input
           type="text"
           placeholder={apiKey ? "add entry or ask a question..." : "ask a question or add entry..."}
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !isTyping && inputText.trim() && process(inputText)}
-          className="input"
-          style={{ flex: 1, borderRadius: 'var(--radius-full)' }}
+          className="input text-regular"
+          style={{ flex: 1 }}
         />
         <button
           disabled={isTyping}
           onClick={() => inputText.trim() && process(inputText)}
           className="btn-primary"
-          style={{ width: '48px', height: '48px', borderRadius: '50%', padding: 0, flexShrink: 0, opacity: !isTyping ? 1 : 0.5 }}
+          style={{ width: '48px', padding: 0, flexShrink: 0, opacity: !isTyping ? 1 : 0.5 }}
         >
           <Send size={14} />
         </button>
