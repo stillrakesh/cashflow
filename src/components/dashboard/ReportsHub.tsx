@@ -25,7 +25,7 @@ const ReportsHub: React.FC<ReportsHubProps> = ({
   reports, transactions, onDeleteReport, onBack, isAdmin, restaurantName 
 }) => {
   return (
-    <div className="animate-in">
+    <div className="animate-in" style={{ padding: '1.25rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-card)', marginBottom: 'var(--spacing-section)' }}>
         <button onClick={onBack} className="btn-ghost" style={{ width: '48px' }}>
           <ArrowLeft size={20} />

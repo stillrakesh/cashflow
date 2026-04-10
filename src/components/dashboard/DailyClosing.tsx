@@ -102,7 +102,7 @@ const DailyClosing: React.FC<DailyClosingProps> = ({
   }
 
   return (
-    <div className="animate-in">
+    <div className="animate-in" style={{ padding: '1.25rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-card)', marginBottom: '1.25rem' }}>
         <button onClick={onBack} className="btn-ghost" style={{ width: '40px', height: '40px', padding:0 }}>
           <ArrowLeft size={20} />
