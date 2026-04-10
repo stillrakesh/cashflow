@@ -36,45 +36,47 @@ const ReportsHub: React.FC<ReportsHubProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-card)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {reports.length === 0 ? (
-          <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-            <History size={48} style={{ color: 'var(--text-4)', marginBottom: 'var(--spacing-sm)', margin: '0 auto' }} />
-            <p className="text-light" style={{ color: 'var(--text-3)' }}>No reports generated yet.</p>
+          <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
+            <History size={40} style={{ color: 'var(--text-4)', marginBottom: '1rem', margin: '0 auto' }} />
+            <p className="text-light" style={{ color: 'var(--text-3)', fontSize: '0.875rem' }}>No reports generated yet.</p>
           </div>
         ) : (
           reports.map((report) => (
-            <div key={report.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-card)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div key={report.id} className="card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ 
-                    width: '40px', height: '40px', borderRadius: 'var(--radius-m)', background: 'var(--bg-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)'
+                    width: '44px', height: '44px', borderRadius: '12px', background: 'var(--bg-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)'
                   }}>
                     <Calendar size={20} />
                   </div>
                   <div>
-                    <h3 className="text-heading" style={{ fontSize: '0.9375rem' }}>{report.date}</h3>
-                    <p className="text-label" style={{ textTransform: 'none', margin: 0 }}>
-                      Closed at {new Date(report.closedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <h3 className="text-heading" style={{ fontSize: '0.9375rem', fontWeight: 600 }}>{report.date}</h3>
+                    <div style={{ display: 'inline-block', marginTop: '2px', padding: '2px 8px', background: 'var(--bg-2)', borderRadius: '6px' }}>
+                      <p style={{ fontSize: '0.625rem', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 500 }}>
+                        Closed {new Date(report.closedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 
                 {isAdmin && onDeleteReport && (
-                  <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button 
                       onClick={() => generateDailyReportPDF(report, transactions, restaurantName)}
                       className="btn-ghost"
-                      style={{ width: '48px' }}
+                      style={{ width: '36px', height: '36px', padding: 0 }}
                       title="Download PDF Report"
                     >
                       <FileText size={16} />
                     </button>
                     <button 
-                      onClick={() => onDeleteReport(report.id)}
-                      className="btn-danger" 
-                      style={{ width: '48px' }}
+                      onClick={() => { if(confirm(`Delete report for ${report.date}?`)) onDeleteReport(report.id); }}
+                      className="btn-ghost" 
+                      style={{ width: '36px', height: '36px', padding: 0, color: 'var(--red)' }}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -82,35 +84,35 @@ const ReportsHub: React.FC<ReportsHubProps> = ({
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--spacing-sm)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border)' }}>
                 <div>
-                  <p className="text-label" style={{ marginBottom: '0.25rem' }}>Sales</p>
-                  <p className="text-number" style={{ fontSize: '0.8125rem', color: 'var(--green)' }}>{formatINR(report.sales)}</p>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Sales</p>
+                  <p className="text-number" style={{ fontSize: '0.875rem', color: 'var(--green)' }}>{formatINR(report.sales).replace('₹', 'Rs. ')}</p>
                 </div>
                 <div>
-                  <p className="text-label" style={{ marginBottom: '0.25rem' }}>Expenses</p>
-                  <p className="text-number" style={{ fontSize: '0.8125rem', color: 'var(--red)' }}>{formatINR(report.expenses)}</p>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Expenses</p>
+                  <p className="text-number" style={{ fontSize: '0.875rem', color: 'var(--red)' }}>{formatINR(report.expenses).replace('₹', 'Rs. ')}</p>
                 </div>
                 <div>
-                  <p className="text-label" style={{ marginBottom: '0.25rem' }}>Net profit</p>
-                  <p className="text-number" style={{ fontSize: '0.8125rem' }}>{formatINR(report.profit)}</p>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Net profit</p>
+                  <p className="text-number" style={{ fontSize: '0.875rem', fontWeight: 600 }}>{formatINR(report.profit).replace('₹', 'Rs. ')}</p>
                 </div>
               </div>
 
               <div style={{ 
-                marginTop: 'var(--spacing-card)', paddingTop: 'var(--spacing-card)', borderTop: '1px solid var(--border)',
+                marginTop: '1.25rem',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <div>
-                  <p className="text-label" style={{ marginBottom: '0.25rem' }}>Cash Discrepancy</p>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Cash Discrepancy</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                     {report.discrepancy === 0 ? (
-                      <span className="text-heading" style={{ fontSize: '0.75rem', color: 'var(--green)' }}>Balanced</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 600 }}>Balanced</span>
                     ) : (
                       <>
                         {report.discrepancy > 0 ? <ArrowUpRight size={14} color="var(--blue)" /> : <ArrowDownRight size={14} color="var(--red)" />}
-                        <span className="text-number" style={{ fontSize: '0.75rem', color: report.discrepancy > 0 ? 'var(--blue)' : 'var(--red)' }}>
-                          {formatINR(Math.abs(report.discrepancy))}
+                        <span className="text-number" style={{ fontSize: '0.8125rem', fontWeight: 500, color: report.discrepancy > 0 ? 'var(--blue)' : 'var(--red)' }}>
+                          {formatINR(Math.abs(report.discrepancy)).replace('₹', 'Rs. ')}
                         </span>
                       </>
                     )}
@@ -118,8 +120,8 @@ const ReportsHub: React.FC<ReportsHubProps> = ({
                 </div>
                 
                 <div style={{ textAlign: 'right' }}>
-                  <p className="text-label" style={{ marginBottom: '0.25rem' }}>Counted Cash</p>
-                  <p className="text-number" style={{ fontSize: '0.8125rem' }}>{formatINR(report.actualCash)}</p>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Counted Cash</p>
+                  <p className="text-number" style={{ fontSize: '0.875rem', fontWeight: 600 }}>{formatINR(report.actualCash).replace('₹', 'Rs. ')}</p>
                 </div>
               </div>
             </div>

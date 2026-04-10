@@ -103,103 +103,122 @@ const DailyClosing: React.FC<DailyClosingProps> = ({
 
   return (
     <div className="animate-in">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-card)', marginBottom: 'var(--spacing-section)' }}>
-        <button onClick={onBack} className="btn-ghost" style={{ width: '48px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-card)', marginBottom: '1.25rem' }}>
+        <button onClick={onBack} className="btn-ghost" style={{ width: '40px', height: '40px', padding:0 }}>
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-title" style={{ fontSize: '1.5rem' }}>Daily Financial Closing</h1>
-          <p className="text-label" style={{ textTransform: 'none', margin: 0 }}>Reconcile cash and lock daily records</p>
+          <h1 className="text-title" style={{ fontSize: '1.375rem' }}>Financial Closing</h1>
+          <p className="text-label" style={{ textTransform: 'none', margin: 0, fontSize: '0.8125rem' }}>Daily reconciliation & lock</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--spacing-card)' }}>
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: 'var(--spacing-sm)' }}>
-            <Calendar size={18} className="text-accent" />
-            <span className="text-heading" style={{ fontSize: '0.875rem' }}>Select Closing Date</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className="card" style={{ padding: '0.875rem 1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+              <Calendar size={16} style={{ color: 'var(--text-3)' }} />
+              <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-1)' }}>{selectedDate}</span>
+            </div>
+            <input 
+              type="date" 
+              value={selectedDate}
+              max={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-2)', fontSize: '0.75rem', color: 'var(--text-1)' }}
+            />
           </div>
-          <input 
-            type="date" 
-            className="input text-medium" 
-            value={selectedDate}
-            max={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ fontSize: '1rem', padding: '0.75rem' }}
-          />
           {isAlreadyClosed && (
             <div style={{ 
-              marginTop: 'var(--spacing-sm)', padding: '0.75rem', borderRadius: 'var(--radius-m)', 
+              marginTop: '0.75rem', padding: '0.625rem', borderRadius: '8px', 
               background: 'var(--yellow-soft)', color: 'var(--yellow)',
-              display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem'
+              display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: 500
             }}>
-              <Lock size={14} />
-              This day is already closed and records are locked.
+              <Lock size={12} />
+              This day is already closed.
             </div>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-sm)' }}>
-          <div className="card">
-            <p className="text-label" style={{ marginBottom: '0.5rem' }}>Total Sales</p>
-            <p className="text-number" style={{ fontSize: '1.25rem', color: 'var(--green)' }}>{formatINR(reportData.sales)}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div className="card" style={{ padding: '1rem', background: 'var(--bg-1)' }}>
+            <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Sales</p>
+            <p className="text-number" style={{ fontSize: '1.125rem', color: 'var(--green)', fontWeight: 600 }}>{formatINR(reportData.sales).replace('₹', 'Rs. ')}</p>
           </div>
-          <div className="card">
-            <p className="text-label" style={{ marginBottom: '0.5rem' }}>Total Expenses</p>
-            <p className="text-number" style={{ fontSize: '1.25rem', color: 'var(--red)' }}>{formatINR(reportData.expenses)}</p>
+          <div className="card" style={{ padding: '1rem', background: 'var(--bg-1)' }}>
+            <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Expenses</p>
+            <p className="text-number" style={{ fontSize: '1.125rem', color: 'var(--red)', fontWeight: 600 }}>{formatINR(reportData.expenses).replace('₹', 'Rs. ')}</p>
           </div>
         </div>
 
         {!isAlreadyClosed && (
-          <div className="card" style={{ padding: 'var(--spacing-section)' }}>
-            <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-section)' }}>
+          <div className="card" style={{ padding: '1.25rem', marginTop: '0.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div style={{ 
-                width: '48px', height: '48px', borderRadius: 'var(--radius-m)', background: 'var(--bg-2)', 
-                color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 1rem'
+                width: '44px', height: '44px', borderRadius: '12px', background: 'var(--bg-2)', 
+                color: 'var(--text-1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 0.75rem'
               }}>
-                <Calculator size={24} />
+                <Calculator size={20} />
               </div>
-              <h3 className="text-heading" style={{ fontSize: '1.125rem', marginBottom: '0.25rem' }}>Cash Reconciliation</h3>
-              <p className="text-label" style={{ textTransform: 'none' }}>Enter the physical cash amount currently in hand</p>
+              <h3 className="text-heading" style={{ fontSize: '1rem', fontWeight: 600 }}>Cash Reconciliation</h3>
+              <p className="text-label" style={{ textTransform: 'none', fontSize: '0.75rem' }}>Match system records with physical cash</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-card)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-2)', borderRadius: 'var(--radius-m)' }}>
-                <span className="text-label" style={{ textTransform: 'none', color: 'var(--text-2)' }}>System Expected Cash:</span>
-                <span className="text-number">{formatINR(reportData.expectedCash)}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '1rem 1.25rem', background: 'var(--bg-1)', borderRadius: '12px',
+                border: '1px solid var(--border)'
+              }}>
+                <div>
+                  <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px', fontWeight: 600 }}>System Expected Cash</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>calculated from digital entries</p>
+                </div>
+                <span className="text-number" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-0)' }}>
+                  {formatINR(reportData.expectedCash).replace('₹', 'Rs. ')}
+                </span>
               </div>
 
               <div>
-                <label className="text-label" style={{ display: 'block', marginBottom: 'var(--spacing-sm)' }}>Physical Cash Counted</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Physical Cash Counted</label>
+                  {actualCash && (
+                    <span style={{ fontSize: '0.625rem', color: discrepancy === 0 ? 'var(--green)' : 'var(--text-2)' }}>
+                      {discrepancy === 0 ? 'STATUS: PERFECT MATCH' : 'RECALCULATING...'}
+                    </span>
+                  )}
+                </div>
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }}>₹</span>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', fontSize: '0.875rem' }}>Rs.</span>
                   <input 
                     type="number" 
                     className="input text-number" 
                     placeholder="0.00"
                     value={actualCash}
                     onChange={(e) => setActualCash(e.target.value)}
-                    style={{ paddingLeft: '2.5rem', fontSize: '1.25rem' }}
+                    style={{ paddingLeft: '2.75rem', fontSize: '1.375rem', height: '56px', borderRadius: '14px', border: '1px solid var(--border)', background: 'var(--bg-2)' }}
                   />
                 </div>
               </div>
 
               {actualCash && (
                 <div className="animate-in" style={{ 
-                  padding: '1rem', borderRadius: 'var(--radius-m)', 
+                  padding: '1rem 1.25rem', borderRadius: '12px', 
                   background: discrepancy === 0 ? 'var(--green-soft)' : (discrepancy > 0 ? 'var(--blue-soft)' : 'var(--red-soft)'),
                   color: discrepancy === 0 ? 'var(--green)' : (discrepancy > 0 ? 'var(--blue)' : 'var(--red)'),
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   border: `1px solid ${discrepancy === 0 ? 'var(--green)' : (discrepancy > 0 ? 'var(--blue)' : 'var(--red)')}`
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                     {discrepancy === 0 ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                    <span className="text-heading" style={{ fontSize: '0.875rem' }}>
-                      {discrepancy === 0 ? 'Balanced' : (discrepancy > 0 ? 'Surplus' : 'Shortage')}
+                    <span className="text-heading" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                      {discrepancy === 0 ? 'Balanced' : (discrepancy > 0 ? 'Cash Surplus' : 'Cash Shortage')}
                     </span>
                   </div>
-                  <span className="text-number">{formatINR(Math.abs(discrepancy))}</span>
+                  <span className="text-number" style={{ fontSize: '1rem', fontWeight: 600 }}>
+                    {formatINR(Math.abs(discrepancy)).replace('₹', 'Rs. ')}
+                  </span>
                 </div>
               )}
 
@@ -207,9 +226,9 @@ const DailyClosing: React.FC<DailyClosingProps> = ({
                 onClick={handleCloseDay}
                 disabled={isSubmitting || !actualCash}
                 className="btn-primary" 
-                style={{ width: '100%', marginTop: 'var(--spacing-sm)' }}
+                style={{ width: '100%', height: '52px', borderRadius: '14px', marginTop: '0.5rem', fontSize: '0.9375rem', fontWeight: 600 }}
               >
-                {isSubmitting ? 'Closing Day...' : `Finish & Close ${selectedDate}`}
+                {isSubmitting ? 'Finalizing...' : `Close Day Records`}
               </button>
             </div>
           </div>
