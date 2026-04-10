@@ -90,31 +90,40 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ transactions, onApp
         )}
       </div>
 
-      {/* Reject Reason Modal */}
+      {/* Reject Reason Modal - Centered for better stability */}
       {rejectId && (
-        <div className="sheet-overlay" style={{ zIndex: 1000 }} onClick={() => setRejectId(null)}>
-          <div className="sheet" onClick={e => e.stopPropagation()} style={{ padding: 'var(--spacing-section)' }}>
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.25rem', zIndex: 1000
+        }} onClick={() => setRejectId(null)}>
+          <div className="card animate-in" onClick={e => e.stopPropagation()} style={{ 
+            width: '100%', maxWidth: '360px', padding: '1.5rem',
+            background: 'var(--bg-1)', border: '1px solid var(--border-strong)',
+            boxShadow: 'var(--shadow-modal)'
+          }}>
             <h3 className="text-heading" style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Reject Transaction</h3>
-            <p className="text-label" style={{ textTransform: 'none', marginBottom: 'var(--spacing-section)' }}>Please provide a reason why this entry is being rejected.</p>
+            <p className="text-label" style={{ textTransform: 'none', marginBottom: '1.25rem' }}>Please provide a reason why this entry is being rejected.</p>
             
             <textarea 
               autoFocus
               className="input text-regular"
-              style={{ width: '100%', height: '6rem', marginBottom: 'var(--spacing-section)', padding: '0.75rem', fontSize: '0.875rem' }}
+              style={{ width: '100%', height: '6rem', marginBottom: '1.25rem', padding: '0.875rem', fontSize: '0.875rem', borderRadius: '12px' }}
               placeholder="e.g. Wrong amount, missing receipt..."
               value={comment}
               onChange={e => setComment(e.target.value)}
             />
 
-            <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-              <button onClick={() => setRejectId(null)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => setRejectId(null)} className="btn-secondary" style={{ flex: 1, height: '44px' }}>Cancel</button>
               <button 
                 onClick={handleRejectSubmit} 
                 className="btn-danger" 
-                style={{ flex: 1 }}
+                style={{ flex: 1, height: '44px' }}
                 disabled={!comment.trim()}
               >
-                Confirm Reject
+                Reject
               </button>
             </div>
           </div>
