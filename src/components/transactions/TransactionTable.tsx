@@ -244,59 +244,92 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         </div>
                       ) : (
                         <div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                          <div style={{ 
+                            display: 'grid', gridTemplateColumns: '1fr 1fr', 
+                            gap: '1.25rem', marginBottom: '1.25rem', 
+                            padding: '0.75rem 0'
+                          }}>
                             <div>
-                              <p className="text-label" style={{ marginBottom: '2px' }}>status</p>
-                              <p className="text-heading" style={{ color: statusColor, fontSize: '0.8125rem' }}>{txn.status}</p>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 600 }}>Status</p>
+                              <div style={{ 
+                                display: 'inline-flex', alignItems: 'center', height: '22px', 
+                                padding: '0 10px', borderRadius: 'var(--radius-full)', 
+                                background: statusColor.includes('green') ? 'var(--green-soft)' : (statusColor.includes('yellow') ? 'var(--yellow-soft)' : 'var(--bg-3)'),
+                                border: `1px solid ${statusColor}`
+                              }}>
+                                <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: statusColor, textTransform: 'uppercase' }}>{txn.status}</span>
+                              </div>
                             </div>
                             <div>
-                              <p className="text-label" style={{ marginBottom: '2px' }}>payment</p>
-                              <p className="text-heading" style={{ fontSize: '0.8125rem', textTransform: 'uppercase' }}>{txn.paymentType}</p>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 600 }}>Payment</p>
+                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-1)', textTransform: 'uppercase' }}>{txn.paymentType}</p>
                             </div>
                             <div>
-                              <p className="text-label" style={{ marginBottom: '2px' }}>account</p>
-                              <p className="text-heading" style={{ fontSize: '0.8125rem' }}>{txn.account || '—'}</p>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 600 }}>Account</p>
+                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-1)' }}>{txn.account || '—'}</p>
                             </div>
                             <div>
-                              <p className="text-label" style={{ marginBottom: '2px' }}>recorded by</p>
-                              <p className="text-heading" style={{ fontSize: '0.8125rem' }}>{txn.userName.split(' ')[0]}</p>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontWeight: 600 }}>Recorded by</p>
+                              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-1)' }}>{txn.userName}</p>
                             </div>
                           </div>
                           
                           {txn.notes && (
-                            <div style={{ marginBottom: '12px' }}>
-                              <p className="text-label" style={{ marginBottom: '2px' }}>notes</p>
-                              <p className="text-regular" style={{ fontSize: '0.8125rem' }}>{txn.notes}</p>
+                            <div style={{ 
+                              marginBottom: '1rem', padding: '0.875rem 1rem', 
+                              background: 'var(--bg-2)', borderRadius: '12px',
+                              borderLeft: '3px solid var(--border-strong)'
+                            }}>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 600 }}>Notes</p>
+                              <p style={{ fontSize: '0.8125rem', color: 'var(--text-1)', margin: 0, lineHeight: 1.5 }}>{txn.notes}</p>
                             </div>
                           )}
 
                           {txn.status === 'rejected' && txn.adminComment && (
-                            <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--red-soft)', borderRadius: 'var(--radius-m)', border: '1px solid var(--red)' }}>
-                              <p className="text-label" style={{ color: 'var(--red)', marginBottom: '2px', fontWeight: 600 }}>rejection reason</p>
-                              <p style={{ fontSize: '0.75rem', color: 'var(--text-1)', margin: 0, fontStyle: 'italic' }}>"{txn.adminComment}"</p>
+                            <div style={{ 
+                              marginBottom: '1rem', padding: '1rem', 
+                              background: 'var(--red-soft)', borderRadius: '12px', 
+                              border: '1px solid var(--red)'
+                            }}>
+                              <p style={{ fontSize: '0.625rem', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', fontWeight: 700 }}>Rejection reason</p>
+                              <p style={{ fontSize: '0.8125rem', color: 'var(--text-1)', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>"{txn.adminComment}"</p>
                             </div>
                           )}
                           
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.5rem' }}>
                             {(isAdmin || (!isLocked && txn.status === 'pending')) && (
                               <button 
                                 onClick={() => startEdit(txn)} 
-                                className="btn-outline" 
+                                className="btn-ghost" 
                                 style={{ 
-                                  height: '32px', padding: '0 10px', fontSize: '0.75rem', gap: '4px',
+                                  height: '36px', padding: '0 0.875rem', fontSize: '0.75rem', gap: '6px',
+                                  background: 'var(--bg-2)', color: 'var(--text-1)', borderRadius: '8px',
+                                  border: '1px solid var(--border)',
                                   opacity: (isLocked && !isAdmin) ? 0.5 : 1,
                                   cursor: (isLocked && !isAdmin) ? 'not-allowed' : 'pointer'
                                 }}
                                 disabled={isLocked && !isAdmin}
                               >
-                                <Edit3 size={12} /> edit
+                                <Edit3 size={13} /> Edit
                               </button>
                             )}
 
                             {isAdmin && txn.status === 'pending' && (
                               <>
-                                <button onClick={() => onApprove(txn.id)} className="btn-primary" style={{ height: '32px', padding: '0 10px', fontSize: '0.75rem' }}>approve</button>
-                                <button onClick={() => onReject && onReject(txn.id)} className="btn-outline" style={{ height: '32px', padding: '0 10px', fontSize: '0.75rem', color: 'var(--red)', borderColor: 'var(--red)' }}>reject</button>
+                                <button 
+                                  onClick={() => onApprove(txn.id)} 
+                                  className="btn-primary" 
+                                  style={{ height: '36px', padding: '0 1rem', fontSize: '0.75rem', borderRadius: '8px', fontWeight: 600 }}
+                                >
+                                  Approve
+                                </button>
+                                <button 
+                                  onClick={() => onReject && onReject(txn.id)} 
+                                  className="btn-ghost" 
+                                  style={{ height: '36px', padding: '0 1rem', fontSize: '0.75rem', color: 'var(--red)', background: 'var(--red-soft)', borderRadius: '8px', fontWeight: 600 }}
+                                >
+                                  Reject
+                                </button>
                               </>
                             )}
 
@@ -305,19 +338,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                 onClick={() => onDelete(txn.id)} 
                                 className="btn-ghost"
                                 style={{ 
-                                  width: '32px', height: '32px', padding: 0, color: 'var(--red)', 
+                                  width: '36px', height: '36px', padding: 0, color: 'var(--red)', 
                                   opacity: (isLocked && !isAdmin) ? 0.5 : 1,
                                   cursor: (isLocked && !isAdmin) ? 'not-allowed' : 'pointer',
                                   marginLeft: 'auto'
                                 }}
                                 disabled={isLocked && !isAdmin}
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={16} />
                               </button>
                             )}
                             
-                            <button onClick={e => { e.stopPropagation(); setExpandedId(null); }} className="btn-ghost" style={{ width: '32px', height: '32px', padding: 0, color: 'var(--text-3)' }}>
-                              <ChevronUp size={16} />
+                            <button onClick={e => { e.stopPropagation(); setExpandedId(null); }} className="btn-ghost" style={{ width: '36px', height: '36px', padding: 0, color: 'var(--text-3)' }}>
+                              <ChevronUp size={18} />
                             </button>
                           </div>
                         </div>
