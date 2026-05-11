@@ -96,11 +96,12 @@
 html {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
-  touch-action: pan-y;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
-  overscroll-behavior: none;
+  overflow-y: auto;
+  /* Relaxed for better desktop browser testing */
+  overscroll-behavior-y: auto;
 }
 
 body {
@@ -113,7 +114,7 @@ body {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
-  overscroll-behavior: none;
+  overflow-y: auto;
   min-height: 100dvh;
 }
 
@@ -500,6 +501,11 @@ select.input {
   animation: fadeIn 0.35s ease forwards;
 }
 
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .stagger-1 { animation-delay: 40ms; opacity: 0; }
 .stagger-2 { animation-delay: 80ms; opacity: 0; }
 .stagger-3 { animation-delay: 120ms; opacity: 0; }
@@ -625,8 +631,24 @@ select.input {
 }
 
 /* ---------- Scrollbar ---------- */
+/* Hide scrollbars by default for that clean app look */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
+
+/* Show a minimal scrollbar on desktop mouse-pointer devices for better UX */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    display: block;
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 10px;
+  }
+}
 
 /* ---------- Theme Toggle (CRED minimal) ---------- */
 .theme-btn {

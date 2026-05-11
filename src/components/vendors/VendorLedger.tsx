@@ -66,7 +66,8 @@ const VendorLedger: React.FC<VendorLedgerProps> = ({ vendors, transactions, orgI
       id: 'vend_' + Date.now().toString(36),
       orgId,
       name: newVendorName.trim(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      status: 'active'
     };
     await onSaveVendor(vendor);
     setNewVendorName('');

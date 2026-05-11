@@ -22,6 +22,12 @@ const BUSINESS_TYPES: { value: BusinessType; label: string; icon: React.ReactNod
   { value: 'other', label: 'Other', icon: <MoreHorizontal size={20} /> },
 ];
 
+const ErrorBanner = ({ error }: { error: string }) => error ? (
+  <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-m)', padding: '0.625rem 0.75rem', marginBottom: '1rem', fontSize: '0.75rem', color: '#ef4444', textAlign: 'center' }}>
+    {error}
+  </div>
+) : null;
+
 const Login: React.FC<LoginProps> = ({ onLogin, onSignUp }) => {
   const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem(THEME_KEY) as ThemeMode) || 'dark');
   
@@ -181,12 +187,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSignUp }) => {
     setRecoveryStep('select');
   };
 
-  // Error banner component
-  const ErrorBanner = () => error ? (
-    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-m)', padding: '0.625rem 0.75rem', marginBottom: '1rem', fontSize: '0.75rem', color: '#ef4444', textAlign: 'center' }}>
-      {error}
-    </div>
-  ) : null;
+
 
   // ==================== RECOVERY VIEW ====================
   if (view === 'recovery') {
@@ -316,7 +317,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSignUp }) => {
       </div>
 
       <div style={{ width: '100%', maxWidth: '340px' }}>
-        <ErrorBanner />
+        <ErrorBanner error={error} />
 
         {/* ========== INITIAL VIEW ========== */}
         {view === 'initial' && (

@@ -621,7 +621,7 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, onClose, balances, isAdmin, 
                     {vendor && !vendors.some(v => v.name.toLowerCase() === vendor.toLowerCase()) && (
                       <button 
                         onClick={() => {
-                          const newV: Vendor = { id: 'vend_' + Date.now().toString(36), orgId: '', name: vendor, createdAt: new Date().toISOString() };
+                          const newV: Vendor = { id: 'vend_' + Date.now().toString(36), orgId: '', name: vendor, createdAt: new Date().toISOString(), status: 'active' };
                           onAddVendor?.(newV);
                         }}
                         className="text-medium"

@@ -39,7 +39,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, pendingC
           );
         }
 
-        const isMoreActive = tab.id === 'more' && ['more', 'accounts', 'vendors', 'settings', 'chat'].includes(activeTab);
+        const isMoreActive = tab.id === 'more' && ['more', 'accounts', 'vendors', 'staff', 'settings', 'chat'].includes(activeTab);
         const isActive = activeTab === tab.id || isMoreActive;
         return (
           <button

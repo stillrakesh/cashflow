@@ -16,20 +16,20 @@ import FilterPanel from './components/shared/FilterPanel';
 import PendingApprovals from './components/dashboard/PendingApprovals';
 import DailyClosing from './components/dashboard/DailyClosing';
 import ReportsHub from './components/dashboard/ReportsHub';
-import VendorLedger from './components/vendors/VendorLedger';
+import VendorManager from './components/vendors/VendorManager';
 import CategoryManager from './components/settings/CategoryManager';
 import RecurringManager from './components/settings/RecurringManager';
 import Login from './components/auth/Login';
 import ClearDataModal from './components/shared/ClearDataModal';
 import DownloadStatementModal from './components/shared/DownloadStatementModal';
 import { versions } from './utils/mockData';
-import { calculateStats, generateAIInsights, formatINR, getTodaySnapshot, getPeriodSummary } from './utils/financeUtils';
+import { calculateStats, generateAIInsights, formatINR, getTodaySnapshot, getPeriodSummary, getDateRangeFromPreset } from './utils/financeUtils';
 import { CATEGORY_CLASSIFICATION } from './types';
-import type { Transaction, User, Organization, FilterState, ThemeMode, EditRecord, Shift, OpeningBalances, DailyReport, Vendor, CategoryConfig, OrganizationSettings, RecurringExpense } from './types';
+import type { Transaction, User, Organization, FilterState, ThemeMode, EditRecord, Shift, OpeningBalances, DailyReport, Vendor, VendorTransaction, CategoryConfig, OrganizationSettings, RecurringExpense } from './types';
 import { 
   Search, SlidersHorizontal, ChevronDown, Download, CheckCircle2, FileText,
   Database, Upload, Lock as LockIcon, Bell, ChevronRight, Eye, EyeOff, Sun, Moon,
-  Wallet, Truck, MessageCircle, X
+  Wallet, Truck, MessageCircle, X, Users, TrendingUp
 } from 'lucide-react';
 import { generateMonthlyReportPDF, generateTransactionStatement } from './utils/pdfUtils';
 import { 
@@ -40,10 +40,16 @@ import {
   listenToOrganization, createOrganization, migrateExistingData, deleteOrganization,
   listenToActiveShift, startShift, endShift,
   saveDailyReport, listenToDailyReports, deleteDailyReport,
-  listenToVendors, saveVendor, deleteVendor,
+  saveVendor,
   getCompleteOrgData, restoreCompleteOrgData,
   listenToRecurringExpenses, saveRecurringExpense, deleteRecurringExpense, updateRecurringExpense
 } from './lib/db';
+import { saveStaffMember, deleteStaffMember, listenToStaff, listenToStaffTransactions, saveStaffTransaction, deleteStaffTransaction } from './lib/staffDb';
+import { saveVendorProfile, deleteVendorProfile, listenToVendorProfiles, saveVendorTransaction, deleteVendorTransaction, listenToVendorTransactions } from './lib/vendorDb';
+import StaffManager from './components/staff/StaffManager';
+import type { StaffMember, StaffTransaction } from './types';
+import FinancialObligations from './components/dashboard/FinancialObligations';
+import ProfitLossReport from './components/dashboard/ProfitLossReport';
 
 const THEME_KEY = 'cafeflow_theme';
 const CURRENT_USER_SESSION_KEY = 'cafeflow_logged_in_user';
@@ -73,6 +79,9 @@ function App() {
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [staffTransactions, setStaffTransactions] = useState<StaffTransaction[]>([]);
+  const [vendorTransactions, setVendorTransactions] = useState<VendorTransaction[]>([]);
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [pendingRecurringTxn, setPendingRecurringTxn] = useState<Partial<Transaction> | null>(null);
@@ -131,11 +140,20 @@ function App() {
     const unsubReports = listenToDailyReports(currentOrgId, setDailyReports);
     unsubscribesRef.current.push(unsubReports);
 
-    const unsubVendors = listenToVendors(currentOrgId, setVendors);
+    const unsubVendors = listenToVendorProfiles(currentOrgId, setVendors);
     unsubscribesRef.current.push(unsubVendors);
 
     const unsubRecurring = listenToRecurringExpenses(currentOrgId, setRecurringExpenses);
     unsubscribesRef.current.push(unsubRecurring);
+
+    const unsubStaff = listenToStaff(currentOrgId, setStaffMembers);
+    unsubscribesRef.current.push(unsubStaff);
+
+    const unsubStaffTxns = listenToStaffTransactions(currentOrgId, setStaffTransactions);
+    unsubscribesRef.current.push(unsubStaffTxns);
+
+    const unsubVendorTxns = listenToVendorTransactions(currentOrgId, setVendorTransactions);
+    unsubscribesRef.current.push(unsubVendorTxns);
     
     const unsubSettings = listenToOrgSettings(currentOrgId, (settings: Partial<OrganizationSettings>) => {
       if (settings) {
@@ -228,8 +246,17 @@ function App() {
         (t.account || '').toLowerCase().includes(q)
       ); 
     }
-    if (f.dateFrom) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) >= f.dateFrom);
-    if (f.dateTo) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) <= f.dateTo);
+
+    let effectiveDateFrom = f.dateFrom;
+    let effectiveDateTo = f.dateTo;
+    if (f.datePreset && f.datePreset !== 'all' && f.datePreset !== 'custom') {
+      const { dateFrom: presetFrom, dateTo: presetTo } = getDateRangeFromPreset(f.datePreset);
+      effectiveDateFrom = presetFrom;
+      effectiveDateTo = presetTo;
+    }
+
+    if (effectiveDateFrom) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) >= effectiveDateFrom);
+    if (effectiveDateTo) r = r.filter(t => new Date(t.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) <= effectiveDateTo);
     if (f.categories.length) r = r.filter(t => f.categories.includes(t.category));
     if (f.paymentTypes.length) r = r.filter(t => f.paymentTypes.includes(t.paymentType));
     if (f.types.length) r = r.filter(t => f.types.includes(t.type));
@@ -553,6 +580,15 @@ function App() {
       />
     );
 
+    if (activeTab === 'pl') return (
+      <ProfitLossReport
+        transactions={transactions}
+        staffTransactions={staffTransactions}
+        customCategories={customCategories}
+        onBack={() => setActiveTab('dashboard')}
+      />
+    );
+
     const tab = activeTab === 'add' ? 'dashboard' : activeTab;
     switch (tab) {
       case 'dashboard':
@@ -587,6 +623,13 @@ function App() {
                 <FileText size={14} /> Reports
               </button>
               <button 
+                onClick={() => setActiveTab('pl')} 
+                className="btn-secondary" 
+                style={{ flex: 1, height: '36px', gap: '0.5rem' }}
+              >
+                <TrendingUp size={14} /> P&L
+              </button>
+              <button 
                 onClick={() => setActiveTab('closing')} 
                 className="btn-primary" 
                 style={{ flex: 1, height: '36px', gap: '0.5rem' }}
@@ -619,6 +662,12 @@ function App() {
             {currentUser?.role === 'admin' && (
               <>
                 <SalesChart transactions={transactions} />
+                <FinancialObligations
+                  staffMembers={staffMembers}
+                  staffTransactions={staffTransactions}
+                  vendorTransactions={vendorTransactions}
+                  recurringExpenses={recurringExpenses}
+                />
                 <AIInsights insights={insights} />
                 {appFeatures.enableShifts && <ShiftLogs orgId={currentOrgId} role={currentUser.role} />}
               </>
@@ -879,17 +928,34 @@ function App() {
       case 'vendors':
         return (
           <div className="screen animate-in">
-            <div className="screen-header" style={{ paddingBottom: '0.5rem' }}>
-              <button onClick={() => setActiveTab('more')} className="btn-ghost" style={{ padding: '0.5rem 0.5rem 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-2)' }}>
-                <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /> back
-              </button>
-            </div>
-            <VendorLedger 
-              vendors={vendors} 
-              transactions={transactions} 
+            <VendorManager
+              vendors={vendors}
+              vendorTransactions={vendorTransactions}
               orgId={currentOrgId}
-              onSaveVendor={async (v) => { if (currentOrgId) await saveVendor(currentOrgId, v); }}
-              onDeleteVendor={async (vid) => { if (currentOrgId) await deleteVendor(currentOrgId, vid); }}
+              currentUser={currentUser!}
+              onSaveVendor={async (v) => { if (currentOrgId) await saveVendorProfile(currentOrgId, v); }}
+              onDeleteVendor={async (vid) => { if (currentOrgId) await deleteVendorProfile(currentOrgId, vid); }}
+              onSaveVendorTransaction={async (vt, gt) => { if (currentOrgId) await saveVendorTransaction(currentOrgId, vt, gt); }}
+              onDeleteVendorTransaction={async (vtId, gtId) => { if (currentOrgId) await deleteVendorTransaction(currentOrgId, vtId, gtId); }}
+              onBack={() => setActiveTab('more')}
+            />
+          </div>
+        );
+
+      case 'staff':
+        if (currentUser?.role !== 'admin') { setActiveTab('dashboard'); return null; }
+        return (
+          <div className="screen animate-in">
+            <StaffManager
+              staff={staffMembers}
+              staffTransactions={staffTransactions}
+              orgId={currentOrgId}
+              currentUser={currentUser}
+              onSaveStaff={async (s) => { if (currentOrgId) await saveStaffMember(currentOrgId, s); }}
+              onDeleteStaff={async (id) => { if (currentOrgId) await deleteStaffMember(currentOrgId, id); }}
+              onSaveStaffTransaction={async (st, gt) => { if (currentOrgId) await saveStaffTransaction(currentOrgId, st, gt); }}
+              onDeleteStaffTransaction={async (sid, gid) => { if (currentOrgId) await deleteStaffTransaction(currentOrgId, sid, gid); }}
+              onBack={() => setActiveTab('more')}
             />
           </div>
         );
@@ -948,6 +1014,23 @@ function App() {
                       <Truck size={16} /> Vendor Ledger
                     </div>
                     <ChevronRight size={16} color="var(--text-3)" />
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('staff')}
+                    className="btn-secondary" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0.875rem' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-1)' }}>
+                      <Users size={16} /> Staff & Payroll
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {staffMembers.filter(s => s.status === 'active' && s.salaryBasis === 'monthly').some(s => {
+                        const thisMonth = new Date().toISOString().slice(0, 7);
+                        const paid = staffTransactions.filter(t => t.staffId === s.id && (t.type === 'salary' || t.type === 'advance') && t.date.slice(0, 7) === thisMonth).reduce((a, t) => a + t.amount, 0);
+                        const deductions = staffTransactions.filter(t => t.staffId === s.id && (t.type === 'deduction' || t.type === 'penalty') && t.date.slice(0, 7) === thisMonth).reduce((a, t) => a + t.amount, 0);
+                        return (paid + deductions) < s.salaryAmount;
+                      }) && <span style={{ fontSize: '0.5rem', background: 'var(--yellow)', color: 'white', padding: '2px 5px', borderRadius: '4px', fontWeight: 700 }}>DUE</span>}
+                      <ChevronRight size={16} color="var(--text-3)" />
+                    </div>
                   </button>
                   <button 
                     onClick={() => setActiveTab('chat')}

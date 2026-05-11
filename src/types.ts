@@ -12,6 +12,11 @@ export type DatePreset = 'today' | 'yesterday' | 'this_week' | 'this_month' | 't
 export type BusinessType = 'restaurant' | 'cafe' | 'retail' | 'services' | 'other';
 export type PlanTier = 'free' | 'pro' | 'enterprise';
 export type RecurrenceFrequency = 'monthly' | 'weekly';
+export type StaffTransactionType = 'salary' | 'advance' | 'bonus' | 'deduction' | 'incentive' | 'penalty' | 'reimbursement' | 'adjustment';
+export type EmploymentType = 'full-time' | 'part-time' | 'contract' | 'daily-wage';
+export type SalaryCycle = 'monthly' | 'weekly' | 'bi-weekly' | 'daily';
+export type StaffStatus = 'active' | 'inactive' | 'on-leave';
+export type VendorTxnType = 'payment' | 'credit' | 'advance' | 'return' | 'adjustment' | 'purchase';
 
 export type OpeningBalances = Record<string, number>;
 
@@ -235,8 +240,34 @@ export interface Vendor {
   name: string;
   contact?: string;
   email?: string;
-  category?: string;
+  phone?: string;
+  category?: string;     // What they supply, e.g. 'vegetables'
+  address?: string;
+  gstNumber?: string;
+  notes?: string;
+  status: 'active' | 'inactive';
   createdAt: string;
+  updatedAt?: string;
+}
+
+// A dedicated vendor transaction (distinct from global cashflow transactions)
+export interface VendorTransaction {
+  id: string;
+  orgId: string;
+  vendorId: string;
+  vendorName: string;
+  type: VendorTxnType;
+  amount: number;
+  date: string;           // ISO string
+  dueDate?: string;       // ISO string — for 'credit' entries: when must we pay this back?
+  notes?: string;
+  paymentMethod?: string;
+  category?: string;
+  invoiceNo?: string;
+  addedBy: string;
+  addedByName: string;
+  createdAt: string;
+  globalTxnId?: string;
 }
 
 export interface FilterState {
@@ -289,6 +320,67 @@ export interface RecurringExpense {
   notes?: string;
   classification: ExpenseClassification;
   createdAt: string;
+}
+
+// ============================================
+// Staff Management Module
+// ============================================
+export interface StaffMember {
+  id: string;
+  orgId: string;
+  // Personal
+  name: string;
+  phone?: string;
+  address?: string;
+  emergencyContact?: string;
+  dob?: string;
+  joiningDate: string;
+  governmentId?: string;
+  photoUrl?: string;
+  // Work
+  position: string;
+  department?: string;
+  employmentType: EmploymentType;
+  status: StaffStatus;
+  // Salary Config
+  salaryBasis: 'monthly' | 'daily';
+  salaryAmount: number; // represents monthly salary or daily wage
+  salaryCycle: SalaryCycle;
+  salaryDueDay?: number; // 1-31 for monthly
+  paymentMethod: PaymentType;
+  bankDetails?: string; // bank name / UPI ID
+  notes?: string;
+  monthlyAttendance?: Record<string, number>; // month (YYYY-MM) -> days worked
+  historicalSalaries?: Record<string, number>; // month (YYYY-MM) -> locked salary amount
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface StaffTransaction {
+  id: string;
+  orgId: string;
+  staffId: string;
+  staffName: string;
+  type: StaffTransactionType;
+  amount: number;
+  date: string; // ISO string
+  notes?: string;
+  paymentMethod: PaymentType;
+  addedBy: string;      // userId of admin who added
+  addedByName: string;
+  referenceId?: string; // auto-generated or manual
+  createdAt: string;
+  // Link to global transaction for cashflow integration
+  globalTxnId?: string;
+  period?: string;      // YYYY-MM (Accrual period: e.g. "2024-04" for April salary)
+}
+
+export interface StaffAdvanceSummary {
+  staffId: string;
+  totalAdvances: number;
+  recoveredAdvances: number;
+  outstanding: number;
 }
 
 export const VERSION_CONSISTENCY = '4.0.0';
